@@ -1,5 +1,13 @@
 {
-  "dependencies": {
-    "express": "^5.1.0"
+  "name": "project3-gang-43",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev",
+    "client": "npm run dev --prefix client",
+    "server": "npm start --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
