@@ -1,35 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import CashierView from './components/CashierView';
+import CustomerKiosk from './components/CustomerKiosk';
+import ManagerDashboard from './components/ManagerDashboard';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Removed unused 'count' state variable
+  const [currentView, setCurrentView] = useState('cashier');
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+   <div>
+      {/* View Selector */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-full shadow-lg p-2 flex gap-2">
+        <button
+          onClick={() => setCurrentView('cashier')}
+          className={`px-6 py-2 rounded-full font-semibold transition-all ${
+            currentView === 'cashier' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Cashier View
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+        <button
+          onClick={() => setCurrentView('kiosk')}
+          className={`px-6 py-2 rounded-full font-semibold transition-all ${
+            currentView === 'kiosk' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Customer Kiosk
+        </button>
+        <button
+          onClick={() => setCurrentView('manager')}
+          className={`px-6 py-2 rounded-full font-semibold transition-all ${
+            currentView === 'manager' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Manager Dashboard
+        </button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      {/* Render Current View */}
+      <div className="pt-16">
+        {currentView === 'cashier' && <CashierView />}
+        {currentView === 'kiosk' && <CustomerKiosk />}
+        {currentView === 'manager' && <ManagerDashboard />}
+      </div>
+    </div>
+  );
 }
 
 export default App
