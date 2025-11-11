@@ -1,7 +1,3 @@
-// ============================================
-// FILE 2: CustomerKiosk.jsx
-// ============================================
-
 import React, { useState } from 'react';
 import { Globe, ZoomIn, Eye, Trash2 } from 'lucide-react';
 
