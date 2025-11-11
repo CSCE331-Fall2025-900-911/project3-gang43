@@ -1,57 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import CashierView from './components/CashierView';
 import CustomerKiosk from './components/CustomerKiosk';
 import ManagerDashboard from './components/ManagerDashboard';
 import './App.css';
 
 function App() {
-  // Removed unused 'count' state variable
-  const [currentView, setCurrentView] = useState('cashier');
-
   return (
-   <div>
-      {/* View Selector */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-full shadow-lg p-2 flex gap-2">
-        <button
-          onClick={() => setCurrentView('cashier')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'cashier' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Cashier View
-        </button>
-        <button
-          onClick={() => setCurrentView('kiosk')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'kiosk' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Customer Kiosk
-        </button>
-        <button
-          onClick={() => setCurrentView('manager')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'manager' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Manager Dashboard
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-100 space-y-12">
+      {/* Manager Dashboard */}
+      <section className="border rounded-lg shadow bg-white p-4">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Manager Dashboard</h2>
+        <ManagerDashboard />
+      </section>
 
-      {/* Render Current View */}
-      <div className="pt-16">
-        {currentView === 'cashier' && <CashierView />}
-        {currentView === 'kiosk' && <CustomerKiosk />}
-        {currentView === 'manager' && <ManagerDashboard />}
-      </div>
+      {/* Cashier View */}
+      <section className="border rounded-lg shadow bg-white p-4">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Cashier View</h2>
+        <CashierView />
+      </section>
+
+      {/* Customer Kiosk */}
+      <section className="border rounded-lg shadow bg-white p-4">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Customer Kiosk</h2>
+        <CustomerKiosk />
+      </section>
     </div>
   );
 }
 
-export default App
+export default App;
