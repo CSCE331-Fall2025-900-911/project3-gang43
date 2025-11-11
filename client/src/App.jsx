@@ -61,12 +61,11 @@ function AppContent() {
         </button>
       </div>
 
-      {/* Render Current View */}
-      <div className="pt-16">
-        {currentView === 'cashier' && <CashierView />}
-        {currentView === 'kiosk' && <CustomerKiosk />}
-        {currentView === 'manager' && <ManagerDashboard />}
-      </div>
+      {/* Customer Kiosk */}
+      <section className="border rounded-lg shadow bg-white p-4">
+        <h2 className="text-2xl font-semibold mb-4 text-center">Customer Kiosk</h2>
+        <CustomerKiosk />
+      </section>
     </div>
   );
 }
