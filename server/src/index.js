@@ -6,7 +6,15 @@ import { OAuth2Client } from "google-auth-library";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS properly
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -46,12 +54,11 @@ app.post("/api/auth/google", async (req, res) => {
     });
   }
 });
-
-// Protected route example
+ 
 app.get("/api/user/profile", (req, res) => {
-  // In a real app, you'd verify the JWT token here
   res.json({ message: "Protected route accessed" });
 });
 
-const PORT = process.env.PORT || 5000;
+// Use a safer default port to avoid macOS service collisions (e.g., AirPlay/AirTunes on 5000)
+const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

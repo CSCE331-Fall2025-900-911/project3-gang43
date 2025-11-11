@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
 import CashierView from './components/CashierView';
 import CustomerKiosk from './components/CustomerKiosk';
 import ManagerDashboard from './components/ManagerDashboard';
+import { LogOut } from 'lucide-react';
 import './App.css';
 
-function App() {
-  // Removed unused 'count' state variable
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+function AppContent() {
+  const { user, logout } = useAuth();
   const [currentView, setCurrentView] = useState('cashier');
 
+  if (!user) {
+    return <Login />;
+  }
+
   return (
-   <div>
+    <div>
       {/* View Selector */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-full shadow-lg p-2 flex gap-2">
         <button
@@ -42,6 +52,13 @@ function App() {
         >
           Manager Dashboard
         </button>
+        <button
+          onClick={logout}
+          className="px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition-all flex items-center gap-2"
+          title="Logout"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Render Current View */}
@@ -54,4 +71,14 @@ function App() {
   );
 }
 
-export default App
+function App() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </GoogleOAuthProvider>
+  );
+}
+
+export default App;
