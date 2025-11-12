@@ -30,11 +30,12 @@ app.use(express.json());
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-app.get("/api", (req, res) => {
+// Remove /api prefix since Vercel already routes /api/* to this file
+app.get("/", (req, res) => {
   res.json({ message: "Server is running" });
 });
 
-app.post("/api/auth/google", async (req, res) => {
+app.post("/auth/google", async (req, res) => {
   try {
     const { credential } = req.body;
 
@@ -66,7 +67,7 @@ app.post("/api/auth/google", async (req, res) => {
   }
 });
 
-app.get("/api/user/profile", (req, res) => {
+app.get("/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
 
