@@ -7,7 +7,7 @@ dotenv.config();
 
 const app = express();
 
-// Configure CORS properly
+// Configure CORS properly - allow Vercel domain
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",")
   : [
@@ -15,16 +15,30 @@ const corsOrigins = process.env.CORS_ORIGIN
       "http://localhost:5174",
       "http://localhost:3000",
       "http://127.0.0.1:5173",
+      "https://project3-gang43.vercel.app",
     ];
+
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      if (corsOrigins.indexOf(origin) !== -1 || corsOrigins.includes("*")) {
+        callback(null, true);
+      } else {
+        console.log("CORS blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
 app.options("*", cors());
+console.log("CORS origins configured:", corsOrigins);
 
 app.use(express.json());
 
@@ -36,8 +50,28 @@ app.get("/", (req, res) => {
 });
 
 app.post("/auth/google", async (req, res) => {
+  console.log("Auth request received:", { 
+    hasCredential: !!req.body?.credential,
+    clientId: process.env.GOOGLE_CLIENT_ID ? "SET" : "NOT SET"
+  });
+  
   try {
     const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: "No credential provided",
+      });
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      console.error("GOOGLE_CLIENT_ID not set!");
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error",
+      });
+    }
 
     const ticket = await client.verifyIdToken({
       idToken: credential,
@@ -53,16 +87,20 @@ app.post("/auth/google", async (req, res) => {
       picture: payload.picture,
       role: "cashier",
     };
+    
+    console.log("Auth successful for:", payload.email);
+    
     res.json({
       success: true,
       user,
       message: "Authentication successful",
     });
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.error("Authentication error:", error.message);
     res.status(401).json({
       success: false,
       message: "Invalid credentials",
+      error: error.message,
     });
   }
 });
