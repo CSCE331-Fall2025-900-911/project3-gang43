@@ -35,7 +35,13 @@ app.use(
   })
 );
 
-app.options("*", cors());
+// Handle preflight requests - Express 5.x requires different wildcard syntax
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return cors()(req, res, next);
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -136,6 +142,16 @@ app.use((err, req, res, next) => {
     error: err.message
   });
 });
+
+// For local development - start Express server
+const PORT = process.env.PORT || 5050;
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`CORS origins allowed:`, corsOrigins);
+  });
+}
 
 // Export handler for Vercel serverless - properly handle async
 export default async function handler(req, res) {
