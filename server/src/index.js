@@ -60,6 +60,15 @@ app.get("/api/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
 
-// Use a safer default port to avoid macOS service collisions (e.g., AirPlay/AirTunes on 5000)
+// Export a handler for serverless platforms (Vercel). When running locally
+// (not on Vercel), start a listener so `npm start` still works for development.
 const PORT = process.env.PORT || 5050;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+// For @vercel/node we should export a default handler that forwards requests to the Express app.
+// This allows Vercel to invoke the Express app per request. In ESM, export default a function.
+export default function handler(req, res) {
+  return app(req, res);
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
+import { API_URL } from '../services/routes';
 
 const Login = ({ onSuccess }) => {
   const [error, setError] = useState('');
@@ -9,7 +10,7 @@ const Login = ({ onSuccess }) => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       // Send the credential to your backend for verification
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/google`, {
+  const response = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
