@@ -8,14 +8,24 @@ dotenv.config();
 const app = express();
 
 // Configure CORS properly
-const corsOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
-app.use(cors({
-  origin: corsOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+    ];
+app.use(
+  cors({
+    origin: corsOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+app.options("*", cors());
+console.log("CORS origins allowed:", corsOrigins);
 app.use(express.json());
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -25,6 +35,7 @@ app.get("/api", (req, res) => {
 });
 
 app.post("/api/auth/google", async (req, res) => {
+  console.log("Hello, world!");
   try {
     const { credential } = req.body;
 
@@ -34,13 +45,13 @@ app.post("/api/auth/google", async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    
+
     const user = {
       id: payload.sub,
       email: payload.email,
       name: payload.name,
       picture: payload.picture,
-      role: 'cashier', 
+      role: "cashier",
     };
     res.json({
       success: true,
@@ -55,7 +66,7 @@ app.post("/api/auth/google", async (req, res) => {
     });
   }
 });
- 
+
 app.get("/api/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
