@@ -49,6 +49,19 @@ app.get("/", (req, res) => {
   res.json({ message: "Server is running" });
 });
 
+app.get("/debug", (req, res) => {
+  res.json({
+    message: "Debug info",
+    env: {
+      hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+      googleClientIdLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
+      hasCorsOrigin: !!process.env.CORS_ORIGIN,
+      nodeEnv: process.env.NODE_ENV,
+      isVercel: !!process.env.VERCEL,
+    }
+  });
+});
+
 app.post("/auth/google", async (req, res) => {
   console.log("Auth request received:", { 
     hasCredential: !!req.body?.credential,
