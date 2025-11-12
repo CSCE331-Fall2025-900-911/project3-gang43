@@ -1,10 +1,8 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 
-dotenv.config();
-
+// Initialize Express app
 const app = express();
 
 // Configure CORS properly - allow Vercel domain
@@ -38,11 +36,18 @@ app.use(
 );
 
 app.options("*", cors());
-console.log("CORS origins configured:", corsOrigins);
 
 app.use(express.json());
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Initialize OAuth client - will use GOOGLE_CLIENT_ID from Vercel env vars
+let client;
+try {
+  if (process.env.GOOGLE_CLIENT_ID) {
+    client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  }
+} catch (error) {
+  console.error("Failed to initialize OAuth client:", error);
+}
 
 // Remove /api prefix since Vercel already routes /api/* to this file
 app.get("/", (req, res) => {
@@ -122,7 +127,44 @@ app.get("/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
 
-// Export handler for Vercel serverless
-export default function handler(req, res) {
-  return app(req, res);
+// Catch-all error handler
+app.use((err, req, res, next) => {
+  console.error("Express error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: err.message
+  });
+});
+
+// Export handler for Vercel serverless - properly handle async
+export default async function handler(req, res) {
+  // Set CORS headers manually for OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).end();
+  }
+
+  try {
+    // Let Express handle the request
+    return await new Promise((resolve, reject) => {
+      app(req, res, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Handler error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
 }
