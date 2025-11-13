@@ -56,8 +56,8 @@ try {
 }
 
 // Remove /api prefix since Vercel already routes /api/* to this file
-app.get("/", (req, res) => {
-  console.log("[Express] Matched GET /");
+app.get(["/", "/api"], (req, res) => {
+  console.log("[Express] Matched GET / or /api");
   res.json({ message: "Server is running" });
 });
 
