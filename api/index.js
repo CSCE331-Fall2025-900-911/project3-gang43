@@ -57,6 +57,7 @@ try {
 
 // Remove /api prefix since Vercel already routes /api/* to this file
 app.get("/", (req, res) => {
+  console.log("[Express] Matched GET /");
   res.json({ message: "Server is running" });
 });
 
@@ -161,7 +162,7 @@ app.use((req, res) => {
 
 // Export handler for Vercel serverless - properly handle async
 export default async function handler(req, res) {
-  console.log("[Vercel] API handler invoked", req.method, req.url);
+  console.log(`[Vercel] API handler invoked: ${req.method} ${req.url}`);
   // Set CORS headers manually for OPTIONS requests
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
