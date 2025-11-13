@@ -143,9 +143,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// For local development - start Express server
-const PORT = process.env.PORT || 5050;
-if (!process.env.VERCEL) {
+
+// For local development - start Express server ONLY if not running in Vercel
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -153,8 +154,14 @@ if (!process.env.VERCEL) {
   });
 }
 
+// Catch-all route to always return a response
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Not found" });
+});
+
 // Export handler for Vercel serverless - properly handle async
 export default async function handler(req, res) {
+  console.log("[Vercel] API handler invoked", req.method, req.url);
   // Set CORS headers manually for OPTIONS requests
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
