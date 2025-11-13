@@ -163,6 +163,20 @@ app.use((req, res) => {
 // Export handler for Vercel serverless - properly handle async
 export default async function handler(req, res) {
   console.log(`[Vercel] API handler invoked: ${req.method} ${req.url}`);
+
+  // Normalize URL when Vercel rewrites send the original path as /api/...
+  // Some Vercel rewrites pass the original path so req.url may start with /api.
+  // Strip leading /api so Express routes (which are defined without /api) match.
+  try {
+    if (req.url && req.url.startsWith('/api')) {
+      const original = req.url;
+      // remove only the first /api prefix
+      req.url = req.url.replace(/^\/api/, '') || '/';
+      console.log(`[Vercel] Normalized req.url from ${original} to ${req.url}`);
+    }
+  } catch (e) {
+    console.error('Error normalizing req.url', e);
+  }
   // Set CORS headers manually for OPTIONS requests
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
