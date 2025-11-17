@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Globe, ZoomIn, Eye, Trash2, X } from "lucide-react";
+import { Globe, ZoomIn, Eye, Trash2, X, Mic } from "lucide-react";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
@@ -162,6 +162,17 @@ const CustomerKiosk = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className={`text-4xl font-bold ${textClass}`}>Bubble Tea Shop</h1>
           <div className="flex gap-2">
+            <button
+              className={`px-4 py-3 rounded-lg flex items-center gap-2 ${fontSizeClass} ${
+                highContrast
+                  ? "bg-purple-600 text-yellow-300 hover:bg-purple-700 border-2 border-yellow-400"
+                  : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+              } shadow-md hover:shadow-lg transition-all font-semibold`}
+              aria-label="Voice order"
+            >
+              <Mic className="w-5 h-5" />
+              Voice Order
+            </button>
             <button
               className={`p-3 rounded ${cardBgClass} flex items-center gap-2 ${fontSizeClass}`}
               onClick={() => setLanguage(language === "en" ? "es" : "en")}

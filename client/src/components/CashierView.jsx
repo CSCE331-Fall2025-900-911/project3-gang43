@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Trash2, Eye, LayoutGrid, List } from 'lucide-react';
+import { ShoppingCart, Trash2, Eye, LayoutGrid, List, Mic } from 'lucide-react';
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
@@ -88,6 +88,10 @@ const CashierView = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                <Mic className="w-4 h-4" />
+                Voice Order
+              </button>
               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
                 <Eye className="w-4 h-4" />
                 Accessibility
