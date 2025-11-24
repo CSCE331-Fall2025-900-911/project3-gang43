@@ -19,50 +19,107 @@ function AppContent() {
   }
 
   return (
-    <div>
-      {/* View Selector */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-full shadow-lg p-2 flex gap-2">
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      {/* View Selector - Modern styled navigation */}
+      <div style={{
+        position: 'fixed',
+        top: '1rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        background: '#ffffff',
+        borderRadius: '16px',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)',
+        padding: '0.5rem',
+        display: 'flex',
+        gap: '0.5rem',
+        border: '1px solid #e2e8f0'
+      }}>
         <button
           onClick={() => setCurrentView('cashier')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'cashier' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          style={{
+            padding: '0.625rem 1.25rem',
+            borderRadius: '12px',
+            border: 'none',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: currentView === 'cashier'
+              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+              : 'transparent',
+            color: currentView === 'cashier' ? 'white' : '#64748b',
+            boxShadow: currentView === 'cashier' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+          }}
         >
           Cashier View
         </button>
         <button
           onClick={() => setCurrentView('kiosk')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'kiosk' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          style={{
+            padding: '0.625rem 1.25rem',
+            borderRadius: '12px',
+            border: 'none',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: currentView === 'kiosk'
+              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+              : 'transparent',
+            color: currentView === 'kiosk' ? 'white' : '#64748b',
+            boxShadow: currentView === 'kiosk' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+          }}
         >
           Customer Kiosk
         </button>
         <button
           onClick={() => setCurrentView('manager')}
-          className={`px-6 py-2 rounded-full font-semibold transition-all ${
-            currentView === 'manager' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          style={{
+            padding: '0.625rem 1.25rem',
+            borderRadius: '12px',
+            border: 'none',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: currentView === 'manager'
+              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+              : 'transparent',
+            color: currentView === 'manager' ? 'white' : '#64748b',
+            boxShadow: currentView === 'manager' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+          }}
         >
           Manager Dashboard
         </button>
+        <div style={{ width: '1px', background: '#e2e8f0', margin: '0.25rem 0' }} />
         <button
           onClick={logout}
-          className="px-4 py-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition-all flex items-center gap-2"
+          style={{
+            padding: '0.625rem 1rem',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'transparent',
+            color: '#ef4444',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="Logout"
         >
           <LogOut className="w-4 h-4" />
+          Logout
         </button>
       </div>
 
       {/* Render Current View */}
-      <div className="pt-16">
+      <div style={{ paddingTop: '5rem' }}>
         {currentView === 'cashier' && <CashierView />}
         {currentView === 'kiosk' && <CustomerKiosk />}
         {currentView === 'manager' && <ManagerDashboard />}

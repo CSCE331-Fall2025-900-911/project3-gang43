@@ -1,474 +1,671 @@
-import React, { useState, useEffect } from "react";
-import { ShoppingCart, Trash2, Eye, Mic } from "lucide-react";
+import React, { useState } from "react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
+import { getTranslation } from "../utils/translations";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Milk Tea");
-  const [orderNumber] = useState(1024);
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [fontSize, setFontSize] = useState("base");
+  const [highContrast, setHighContrast] = useState(false);
 
-  const increaseZoom = () => {
-    setZoomLevel((prev) => Math.min(prev + 10, 150));
-  };
-
-  const decreaseZoom = () => {
-    setZoomLevel((prev) => Math.max(prev - 10, 80));
-  };
-
-  const resetZoom = () => {
-    setZoomLevel(100);
-  };
-
-  useEffect(() => {
-    document.documentElement.style.fontSize = `${zoomLevel}%`;
-  }, [zoomLevel]);
+  const t = (key) => getTranslation(key, language);
 
   const categories = [
-    { name: "Milk Tea", icon: "🧋" },
-    { name: "Fruit Tea", icon: "🍹" },
-    { name: "Smoothies", icon: "🥤" },
-    { name: "Coffee", icon: "☕" },
-    { name: "Toppings", icon: "⭐" },
-    { name: "Snacks", icon: "🍪" },
+    { name: t("milkTea"), icon: "🧋", color: "#ec4899", key: "Milk Tea" },
+    { name: t("fruitTea"), icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
+    { name: t("smoothies"), icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
+    { name: t("coffee"), icon: "☕", color: "#78350f", key: "Coffee" },
+    { name: t("toppings"), icon: "⭐", color: "#14b8a6", key: "Toppings" },
+    { name: t("snacks"), icon: "🍪", color: "#ef4444", key: "Snacks" },
   ];
 
   const menuItems = {
     "Milk Tea": [
-      {
-        id: 1,
-        name: "Classic Milk Tea",
-        description: "Traditional black tea with milk",
-        price: 4.5,
-        color: "bg-gradient-to-br from-pink-400 to-pink-500",
-        icon: "☕",
-      },
-      {
-        id: 2,
-        name: "Taro Milk Tea",
-        description: "Creamy taro flavor with milk",
-        price: 5.25,
-        color: "bg-gradient-to-br from-purple-400 to-purple-600",
-        icon: "🧃",
-      },
-      {
-        id: 3,
-        name: "Thai Milk Tea",
-        description: "Spiced tea with condensed milk",
-        price: 4.75,
-        color: "bg-gradient-to-br from-orange-400 to-orange-500",
-        icon: "☕",
-      },
-      {
-        id: 4,
-        name: "Matcha Milk Tea",
-        description: "Premium matcha with creamy milk",
-        price: 5.5,
-        color: "bg-gradient-to-br from-green-400 to-green-500",
-        icon: "🍃",
-      },
-      {
-        id: 5,
-        name: "Brown Sugar Milk Tea",
-        description: "Rich brown sugar syrup",
-        price: 6.0,
-        color: "bg-gradient-to-br from-amber-600 to-amber-700",
-        icon: "☕",
-      },
-      {
-        id: 6,
-        name: "Hokkaido Milk Tea",
-        description: "Premium Hokkaido milk",
-        price: 5.75,
-        color: "bg-gradient-to-br from-blue-400 to-blue-500",
-        icon: "❄️",
-      },
+      { id: 1, name: "Classic Milk Tea", description: "Traditional black tea with milk", price: 4.5, icon: "☕", color: "#f472b6" },
+      { id: 2, name: "Taro Milk Tea", description: "Creamy taro flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
+      { id: 3, name: "Thai Milk Tea", description: "Spiced with condensed milk", price: 4.75, icon: "☕", color: "#fb923c" },
+      { id: 4, name: "Matcha Milk Tea", description: "Premium matcha blend", price: 5.5, icon: "🍃", color: "#4ade80" },
+      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich brown sugar syrup", price: 6.0, icon: "☕", color: "#d97706" },
+      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
     ],
     "Fruit Tea": [
-      {
-        id: 7,
-        name: "Mango Tea",
-        description: "Fresh mango flavor",
-        price: 5.0,
-        color: "bg-gradient-to-br from-yellow-400 to-orange-400",
-        icon: "🥭",
-      },
-      {
-        id: 8,
-        name: "Strawberry Tea",
-        description: "Sweet strawberry blend",
-        price: 5.0,
-        color: "bg-gradient-to-br from-red-400 to-pink-400",
-        icon: "🍓",
-      },
-      {
-        id: 9,
-        name: "Passion Fruit Tea",
-        description: "Tropical passion fruit",
-        price: 5.25,
-        color: "bg-gradient-to-br from-orange-400 to-yellow-400",
-        icon: "🍊",
-      },
+      { id: 7, name: "Mango Tea", description: "Fresh mango flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
+      { id: 8, name: "Strawberry Tea", description: "Sweet strawberry blend", price: 5.0, icon: "🍓", color: "#f87171" },
+      { id: 9, name: "Passion Fruit Tea", description: "Tropical passion fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
+      { id: 10, name: "Lychee Tea", description: "Sweet lychee flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
     ],
     Smoothies: [
-      {
-        id: 10,
-        name: "Berry Smoothie",
-        description: "Mixed berry blend",
-        price: 6.5,
-        color: "bg-gradient-to-br from-purple-500 to-pink-500",
-        icon: "🫐",
-      },
-      {
-        id: 11,
-        name: "Mango Smoothie",
-        description: "Tropical mango",
-        price: 6.0,
-        color: "bg-gradient-to-br from-yellow-400 to-orange-400",
-        icon: "🥭",
-      },
+      { id: 11, name: "Berry Smoothie", description: "Mixed berry blend", price: 6.5, icon: "🫐", color: "#a855f7" },
+      { id: 12, name: "Mango Smoothie", description: "Tropical mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
+      { id: 13, name: "Avocado Smoothie", description: "Creamy avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
     ],
     Coffee: [
-      {
-        id: 12,
-        name: "Espresso",
-        description: "Strong espresso shot",
-        price: 3.5,
-        color: "bg-gradient-to-br from-amber-700 to-amber-900",
-        icon: "☕",
-      },
-      {
-        id: 13,
-        name: "Latte",
-        description: "Smooth milk coffee",
-        price: 4.5,
-        color: "bg-gradient-to-br from-amber-600 to-amber-700",
-        icon: "☕",
-      },
+      { id: 14, name: "Espresso", description: "Strong espresso shot", price: 3.5, icon: "☕", color: "#92400e" },
+      { id: 15, name: "Latte", description: "Smooth milk coffee", price: 4.5, icon: "☕", color: "#d97706" },
+      { id: 16, name: "Cappuccino", description: "Foamy cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
     ],
     Toppings: [
-      {
-        id: 14,
-        name: "Boba Pearls",
-        description: "Classic tapioca pearls",
-        price: 0.75,
-        color: "bg-gradient-to-br from-gray-700 to-gray-800",
-        icon: "⚫",
-      },
-      {
-        id: 15,
-        name: "Pudding",
-        description: "Creamy egg pudding",
-        price: 1.0,
-        color: "bg-gradient-to-br from-yellow-300 to-yellow-400",
-        icon: "🍮",
-      },
+      { id: 17, name: "Boba Pearls", description: "Classic tapioca pearls", price: 0.75, icon: "⚫", color: "#374151" },
+      { id: 18, name: "Pudding", description: "Creamy egg pudding", price: 1.0, icon: "🍮", color: "#fde047" },
+      { id: 19, name: "Aloe Vera", description: "Fresh aloe vera", price: 0.75, icon: "🌿", color: "#22c55e" },
+      { id: 20, name: "Jelly", description: "Fruit jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
     ],
     Snacks: [
-      {
-        id: 16,
-        name: "Popcorn Chicken",
-        description: "Crispy chicken bites",
-        price: 5.5,
-        color: "bg-gradient-to-br from-orange-500 to-red-500",
-        icon: "🍗",
-      },
+      { id: 21, name: "Popcorn Chicken", description: "Crispy chicken bites", price: 5.5, icon: "🍗", color: "#f97316" },
+      { id: 22, name: "Spring Rolls", description: "Crispy spring rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
+      { id: 23, name: "Fries", description: "Golden french fries", price: 3.5, icon: "🍟", color: "#eab308" },
     ],
   };
 
   const addToCart = (item) => {
-    setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+    if (existingItem) {
+      setCart(cart.map(cartItem =>
+        cartItem.id === item.id
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
+    } else {
+      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+    }
   };
 
   const removeFromCart = (cartId) => {
     setCart(cart.filter((item) => item.cartId !== cartId));
   };
 
-  const clearCart = () => {
-    setCart([]);
+  const updateQuantity = (cartId, delta) => {
+    setCart(cart.map(item => {
+      if (item.cartId === cartId) {
+        const newQuantity = item.quantity + delta;
+        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
   };
 
-  const getSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
+  const clearCart = () => setCart([]);
 
-  const getTax = () => {
-    return getSubtotal() * 0.085;
-  };
-
-  const getTotal = () => {
-    return getSubtotal() + getTax();
-  };
+  const getSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const getTax = () => getSubtotal() * 0.085;
+  const getTotal = () => getSubtotal() + getTax();
 
   const currentItems = menuItems[selectedCategory] || [];
+  const filteredItems = currentItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getFontSizeMultiplier = () => {
+    if (fontSize === "large") return 1.2;
+    if (fontSize === "xlarge") return 1.4;
+    return 1;
+  };
+
+  const fontMultiplier = getFontSizeMultiplier();
+
+  // Theme colors
+  const theme = highContrast ? {
+    bg: "#000000",
+    card: "#1a1a1a",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
+    hover: "#333333",
+    accent: "#ffeb3b",
+  } : {
+    bg: darkMode ? "#0f172a" : "#f8fafc",
+    card: darkMode ? "#1e293b" : "#ffffff",
+    text: darkMode ? "#f1f5f9" : "#0f172a",
+    textMuted: darkMode ? "#94a3b8" : "#64748b",
+    border: darkMode ? "#334155" : "#e2e8f0",
+    hover: darkMode ? "#334155" : "#f1f5f9",
+    accent: "#3b82f6",
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
-      <div className="bg-gradient-to-r from-teal-600 to-blue-600 shadow-md border-b-2 border-teal-700">
-        <div className="max-w-full mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span
-                  className="text-white font-bold"
-                  style={{ fontSize: "1.25rem" }}
-                >
-                  B
-                </span>
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ padding: "1rem 1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{
+                width: `${50 * fontMultiplier}px`,
+                height: `${50 * fontMultiplier}px`,
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: `${1.5 * fontMultiplier}rem`,
+                boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+              }}>
+                B
               </div>
               <div>
-                <h1
-                  className="font-bold text-white"
-                  style={{ fontSize: "1.25rem" }}
-                >
-                  BubblePOS Kiosk
-                </h1>
-                <p className="text-teal-100" style={{ fontSize: "0.75rem" }}>
-                  Terminal #1 • Downtown Store
-                </p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("bubblePOS")}</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>{t("downtownStore")}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-teal-700 px-2 py-1.5 rounded-lg">
-                <button
-                  onClick={decreaseZoom}
-                  className="w-7 h-7 bg-white/20 hover:bg-white/30 rounded flex items-center justify-center text-white font-bold transition-colors"
-                  style={{ fontSize: "0.875rem" }}
-                  aria-label="Decrease text size"
-                >
-                  A-
-                </button>
-                <button
-                  onClick={resetZoom}
-                  className="px-2 py-1 text-white hover:bg-white/20 rounded transition-colors"
-                  style={{ fontSize: "0.75rem" }}
-                  aria-label="Reset text size"
-                >
-                  {zoomLevel}%
-                </button>
-                <button
-                  onClick={increaseZoom}
-                  className="w-7 h-7 bg-white/20 hover:bg-white/30 rounded flex items-center justify-center text-white font-bold transition-colors"
-                  style={{ fontSize: "0.875rem" }}
-                  aria-label="Increase text size"
-                >
-                  A+
-                </button>
-              </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              {/* Voice Order Button */}
               <button
-                className="px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors flex items-center gap-2 font-medium"
-                style={{ fontSize: "0.875rem" }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "600",
+                  fontSize: `${0.875 * fontMultiplier}rem`,
+                  boxShadow: "0 2px 4px rgba(236, 72, 153, 0.3)"
+                }}
               >
-                <Eye className="w-4 h-4" />
-                Access
+                <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {t("voiceOrder")}
               </button>
+
+              {/* Language Toggle */}
+              <button
+                onClick={() => setLanguage(language === "en" ? "es" : "en")}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <Globe style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {language === "en" ? "EN" : "ES"}
+              </button>
+
+              {/* Font Size Toggle */}
+              <button
+                onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
+              </button>
+
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={() => {
+                  setDarkMode(!darkMode);
+                  if (highContrast) setHighContrast(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                {darkMode ? <Sun style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} /> : <Moon style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />}
+              </button>
+
+              {/* High Contrast Toggle */}
+              <button
+                onClick={() => {
+                  setHighContrast(!highContrast);
+                  if (!highContrast) setDarkMode(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
+                  color: highContrast ? "#000" : theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <Eye style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{t("cashier")}</div>
+                </div>
+                <div style={{
+                  width: `${40 * fontMultiplier}px`,
+                  height: `${40 * fontMultiplier}px`,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  border: "2px solid #3b82f6"
+                }}>
+                  MC
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-full mx-auto p-4">
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-8">
-            <div className="bg-white rounded-lg shadow p-3 mb-4">
-              <div className="flex gap-2 overflow-x-auto">
-                {categories.map((category) => (
-                  <button
-                    key={category.name}
-                    onClick={() => setSelectedCategory(category.name)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                      selectedCategory === category.name
-                        ? "bg-gradient-to-r from-teal-500 to-blue-500 text-white shadow-md"
-                        : "bg-white text-gray-700 hover:bg-gradient-to-r hover:from-teal-50 hover:to-blue-50 border border-gray-200"
-                    }`}
-                    style={{ fontSize: "0.875rem" }}
-                  >
-                    <span style={{ fontSize: "1rem" }}>{category.icon}</span>
-                    <span>{category.name}</span>
-                  </button>
-                ))}
-              </div>
+      {/* Main Content */}
+      <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
+        {/* Left Sidebar - Categories */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
+            <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
+              <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {t("categories")}
+              </h3>
             </div>
-
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2
-                  className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent"
-                  style={{ fontSize: "1.125rem" }}
+            <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
+              {categories.map((category) => (
+                <button
+                  key={category.key}
+                  onClick={() => setSelectedCategory(category.key)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: `${0.875 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    marginBottom: "0.5rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    fontWeight: "500",
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    backgroundColor: selectedCategory === category.key ? category.color : "transparent",
+                    color: selectedCategory === category.key ? "white" : theme.text,
+                    transform: selectedCategory === category.key ? "translateX(4px)" : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedCategory !== category.key) {
+                      e.currentTarget.style.backgroundColor = theme.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCategory !== category.key) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
                 >
-                  {selectedCategory}
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {currentItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => addToCart(item)}
-                    className={`${item.color} rounded-lg p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all text-left`}
-                  >
-                    <div style={{ fontSize: "1.875rem" }} className="mb-2">
-                      {item.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div
-                        className="font-semibold mb-1"
-                        style={{ fontSize: "1rem" }}
-                      >
-                        {item.name}
-                      </div>
-                      <div
-                        className="opacity-90 mb-2"
-                        style={{ fontSize: "0.75rem" }}
-                      >
-                        {item.description}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div
-                          className="font-bold"
-                          style={{ fontSize: "1.25rem" }}
-                        >
-                          ${item.price.toFixed(2)}
-                        </div>
-                        <div className="w-7 h-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/50 hover:bg-white/50 transition-all">
-                          <span
-                            className="font-bold leading-none"
-                            style={{ fontSize: "1.125rem" }}
-                          >
-                            +
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                  <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
+                  <span>{category.name}</span>
+                </button>
+              ))}
             </div>
           </div>
+        </div>
 
-          <div className="col-span-4">
-            <div className="bg-white rounded-lg shadow p-4 sticky top-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
-                    <ShoppingCart className="w-4 h-4 text-white" />
+        {/* Center - Menu Items */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
+              <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
+                {categories.find(c => c.key === selectedCategory)?.name || t("allItems")}
+              </h2>
+
+              {/* Search Bar */}
+              <div style={{ position: "relative" }}>
+                <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
+                <input
+                  type="text"
+                  placeholder={t("searchItems")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem ${0.75 * fontMultiplier}rem ${3 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: highContrast ? "#000" : (darkMode ? "#0f172a" : "#f8fafc"),
+                    color: theme.text,
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    outline: "none"
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+              {filteredItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => addToCart(item)}
+                  style={{
+                    backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
+                    border: `2px solid ${theme.border}`,
+                    borderRadius: "16px",
+                    padding: `${1.25 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    textAlign: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = `0 10px 25px -5px ${item.color}40`;
+                    e.currentTarget.style.borderColor = item.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.borderColor = theme.border;
+                  }}
+                >
+                  <div style={{
+                    fontSize: `${3 * fontMultiplier}rem`,
+                    marginBottom: "0.75rem",
+                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                  }}>
+                    {item.icon}
                   </div>
-                  <h2
-                    className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent"
-                    style={{ fontSize: "1rem" }}
-                  >
-                    Current Order
-                  </h2>
-                </div>
+                  <h3 style={{
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    fontWeight: "600",
+                    color: theme.text,
+                    marginBottom: "0.25rem",
+                    lineHeight: "1.3"
+                  }}>
+                    {item.name}
+                  </h3>
+                  <p style={{
+                    fontSize: `${0.75 * fontMultiplier}rem`,
+                    color: theme.textMuted,
+                    marginBottom: "0.75rem",
+                    lineHeight: "1.4"
+                  }}>
+                    {item.description}
+                  </p>
+                  <div style={{
+                    fontSize: `${1.25 * fontMultiplier}rem`,
+                    fontWeight: "bold",
+                    color: item.color
+                  }}>
+                    ${item.price.toFixed(2)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar - Current Order */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("currentOrder")}</h2>
+              {cart.length > 0 && (
                 <button
                   onClick={clearCart}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors"
-                  aria-label="Clear cart"
+                  style={{
+                    padding: "0.5rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor: "transparent",
+                    color: "#ef4444",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
                 </button>
-              </div>
-
-              <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg px-3 py-2 mb-4 border border-teal-200">
-                <div
-                  className="font-semibold text-teal-700"
-                  style={{ fontSize: "0.75rem" }}
-                >
-                  Order #{orderNumber}
-                </div>
-              </div>
-
-              <div className="space-y-2 mb-4 max-h-96 overflow-y-auto">
-                {cart.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <ShoppingCart className="w-8 h-8 text-teal-500" />
-                    </div>
-                    <p
-                      className="text-gray-600 font-medium"
-                      style={{ fontSize: "0.875rem" }}
-                    >
-                      No items in order
-                    </p>
-                    <p
-                      className="text-gray-500 mt-1"
-                      style={{ fontSize: "0.75rem" }}
-                    >
-                      Select items to begin
-                    </p>
-                  </div>
-                ) : (
-                  cart.map((item) => (
-                    <div
-                      key={item.cartId}
-                      className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-3 flex items-center justify-between border-2 border-teal-200 hover:border-teal-300 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div
-                          className="font-semibold text-gray-900"
-                          style={{ fontSize: "0.875rem" }}
-                        >
-                          {item.name}
-                        </div>
-                        <div
-                          className="text-gray-600 mt-0.5"
-                          style={{ fontSize: "0.75rem" }}
-                        >
-                          ${item.price.toFixed(2)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeFromCart(item.cartId)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1.5 rounded ml-2 transition-colors"
-                        aria-label={`Remove ${item.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <>
-                  <div className="border-t-2 border-gray-200 pt-4 space-y-2 mb-4">
-                    <div
-                      className="flex justify-between text-gray-700"
-                      style={{ fontSize: "0.875rem" }}
-                    >
-                      <span>Subtotal</span>
-                      <span className="font-semibold">
-                        ${getSubtotal().toFixed(2)}
-                      </span>
-                    </div>
-                    <div
-                      className="flex justify-between text-gray-700"
-                      style={{ fontSize: "0.875rem" }}
-                    >
-                      <span>Tax (8.5%)</span>
-                      <span className="font-semibold">
-                        ${getTax().toFixed(2)}
-                      </span>
-                    </div>
-                    <div
-                      className="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200"
-                      style={{ fontSize: "1.25rem" }}
-                    >
-                      <span>Total</span>
-                      <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
-                        ${getTotal().toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white py-3.5 rounded-lg font-bold hover:from-teal-600 hover:to-blue-600 transition-colors shadow-lg hover:shadow-xl"
-                    style={{ fontSize: "1rem" }}
-                  >
-                    Process Payment
-                  </button>
-                </>
               )}
             </div>
+
+            <div style={{
+              backgroundColor: highContrast ? "#333" : (darkMode ? "#0f172a" : "#f0f9ff"),
+              padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+              borderRadius: "10px",
+              marginBottom: "1rem",
+              border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
+            }}>
+              <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
+                {t("order")} #{orderNumber}
+              </div>
+            </div>
+
+            <div style={{ maxHeight: "320px", overflowY: "auto", marginBottom: "1rem" }}>
+              {cart.length === 0 ? (
+                <div style={{ textAlign: "center", padding: `${3 * fontMultiplier}rem 0` }}>
+                  <div style={{
+                    width: `${80 * fontMultiplier}px`,
+                    height: `${80 * fontMultiplier}px`,
+                    borderRadius: "50%",
+                    background: highContrast ? "#333" : (darkMode ? "rgba(59, 130, 246, 0.1)" : "#f0f9ff"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1rem"
+                  }}>
+                    <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
+                  </div>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>{t("noItems")}</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {cart.map((item) => (
+                    <div
+                      key={item.cartId}
+                      style={{
+                        backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#0f172a" : "#f8fafc"),
+                        padding: `${0.75 * fontMultiplier}rem`,
+                        borderRadius: "10px",
+                        border: `1px solid ${theme.border}`
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(item.cartId)}
+                          style={{
+                            padding: "0.25rem",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#ef4444",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <Trash2 style={{ width: `${16 * fontMultiplier}px`, height: `${16 * fontMultiplier}px` }} />
+                        </button>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, -1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.card,
+                            color: theme.text,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          −
+                        </button>
+                        <div style={{
+                          flex: 1,
+                          textAlign: "center",
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
+                          fontWeight: "600",
+                          color: theme.text,
+                          padding: "0.5rem"
+                        }}>
+                          {item.quantity}
+                        </div>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, 1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: highContrast ? theme.accent : "#3b82f6",
+                            color: highContrast ? "#000" : "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          +
+                        </button>
+                        <div style={{
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
+                          fontWeight: "bold",
+                          color: theme.text,
+                          minWidth: "70px",
+                          textAlign: "right"
+                        }}>
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <>
+                <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("subtotal")}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("tax")} (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    paddingTop: "0.75rem",
+                    borderTop: `1px solid ${theme.border}`
+                  }}>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>{t("total")}</span>
+                    <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  style={{
+                    width: "100%",
+                    padding: `${0.875 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                    color: highContrast ? "#000" : "white",
+                    fontWeight: "bold",
+                    fontSize: `${1 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    transition: "all 0.2s",
+                    boxShadow: highContrast ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(59, 130, 246, 0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(59, 130, 246, 0.3)";
+                    }
+                  }}
+                >
+                  <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
+                  {t("processPayment")}
+                </button>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: theme.card,
+                    color: theme.text,
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    {t("hold")}
+                  </button>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    {t("void")}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
