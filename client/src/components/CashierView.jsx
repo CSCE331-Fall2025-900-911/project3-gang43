@@ -407,15 +407,6 @@ const CashierView = () => {
                   <button className="w-full bg-gradient-to-r from-pink-500 via-pink-600 to-pink-700 text-white py-4 rounded-xl font-bold text-lg hover:from-pink-600 hover:via-pink-700 hover:to-pink-800 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
                     💳 Process Payment
                   </button>
-
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <button className="px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all shadow-md hover:shadow-lg font-semibold">
-                      ⏸️ Hold
-                    </button>
-                    <button className="px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-semibold">
-                      ✖️ Void
-                    </button>
-                  </div>
                 </>
               )}
             </div>
