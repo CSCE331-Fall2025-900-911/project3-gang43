@@ -1,10 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ShoppingCart, Trash2, Eye, Mic } from "lucide-react";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Milk Tea");
   const [orderNumber] = useState(1024);
+  const [zoomLevel, setZoomLevel] = useState(100);
+
+  const increaseZoom = () => {
+    setZoomLevel((prev) => Math.min(prev + 10, 150));
+  };
+
+  const decreaseZoom = () => {
+    setZoomLevel((prev) => Math.max(prev - 10, 80));
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(100);
+  };
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${zoomLevel}%`;
+  }, [zoomLevel]);
 
   const categories = [
     { name: "Milk Tea", icon: "🧋" },
@@ -191,31 +208,59 @@ const CashierView = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl font-bold">B</span>
+                <span
+                  className="text-white font-bold"
+                  style={{ fontSize: "1.25rem" }}
+                >
+                  B
+                </span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">BubblePOS</h1>
-                <p className="text-xs text-teal-100">Cashier</p>
+                <h1
+                  className="font-bold text-white"
+                  style={{ fontSize: "1.25rem" }}
+                >
+                  BubblePOS Kiosk
+                </h1>
+                <p className="text-teal-100" style={{ fontSize: "0.75rem" }}>
+                  Terminal #1 • Downtown Store
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2 text-sm font-medium shadow-sm">
-                <Mic className="w-4 h-4" />
-                Voice
-              </button>
-              <button className="px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-1 bg-teal-700 px-2 py-1.5 rounded-lg">
+                <button
+                  onClick={decreaseZoom}
+                  className="w-7 h-7 bg-white/20 hover:bg-white/30 rounded flex items-center justify-center text-white font-bold transition-colors"
+                  style={{ fontSize: "0.875rem" }}
+                  aria-label="Decrease text size"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={resetZoom}
+                  className="px-2 py-1 text-white hover:bg-white/20 rounded transition-colors"
+                  style={{ fontSize: "0.75rem" }}
+                  aria-label="Reset text size"
+                >
+                  {zoomLevel}%
+                </button>
+                <button
+                  onClick={increaseZoom}
+                  className="w-7 h-7 bg-white/20 hover:bg-white/30 rounded flex items-center justify-center text-white font-bold transition-colors"
+                  style={{ fontSize: "0.875rem" }}
+                  aria-label="Increase text size"
+                >
+                  A+
+                </button>
+              </div>
+              <button
+                className="px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors flex items-center gap-2 font-medium"
+                style={{ fontSize: "0.875rem" }}
+              >
                 <Eye className="w-4 h-4" />
                 Access
               </button>
-              <div className="flex items-center gap-2 bg-teal-700 px-3 py-2 rounded-lg">
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 text-xs font-bold">MC</span>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-white">Mike Chen</p>
-                  <p className="text-xs text-teal-100">Cashier</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -230,13 +275,14 @@ const CashierView = () => {
                   <button
                     key={category.name}
                     onClick={() => setSelectedCategory(category.name)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
                       selectedCategory === category.name
                         ? "bg-gradient-to-r from-teal-500 to-blue-500 text-white shadow-md"
                         : "bg-white text-gray-700 hover:bg-gradient-to-r hover:from-teal-50 hover:to-blue-50 border border-gray-200"
                     }`}
+                    style={{ fontSize: "0.875rem" }}
                   >
-                    <span className="text-base">{category.icon}</span>
+                    <span style={{ fontSize: "1rem" }}>{category.icon}</span>
                     <span>{category.name}</span>
                   </button>
                 ))}
@@ -245,7 +291,10 @@ const CashierView = () => {
 
             <div className="bg-white rounded-lg shadow p-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+                <h2
+                  className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent"
+                  style={{ fontSize: "1.125rem" }}
+                >
                   {selectedCategory}
                 </h2>
               </div>
@@ -257,20 +306,34 @@ const CashierView = () => {
                     onClick={() => addToCart(item)}
                     className={`${item.color} rounded-lg p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all text-left`}
                   >
-                    <div className="text-3xl mb-2">{item.icon}</div>
+                    <div style={{ fontSize: "1.875rem" }} className="mb-2">
+                      {item.icon}
+                    </div>
                     <div className="flex-1">
-                      <div className="font-semibold text-base mb-1">
+                      <div
+                        className="font-semibold mb-1"
+                        style={{ fontSize: "1rem" }}
+                      >
                         {item.name}
                       </div>
-                      <div className="text-xs opacity-90 mb-2">
+                      <div
+                        className="opacity-90 mb-2"
+                        style={{ fontSize: "0.75rem" }}
+                      >
                         {item.description}
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold">
+                        <div
+                          className="font-bold"
+                          style={{ fontSize: "1.25rem" }}
+                        >
                           ${item.price.toFixed(2)}
                         </div>
                         <div className="w-7 h-7 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/50 hover:bg-white/50 transition-all">
-                          <span className="text-lg font-bold leading-none">
+                          <span
+                            className="font-bold leading-none"
+                            style={{ fontSize: "1.125rem" }}
+                          >
                             +
                           </span>
                         </div>
@@ -289,7 +352,10 @@ const CashierView = () => {
                   <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg flex items-center justify-center shadow-md">
                     <ShoppingCart className="w-4 h-4 text-white" />
                   </div>
-                  <h2 className="text-base font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+                  <h2
+                    className="font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent"
+                    style={{ fontSize: "1rem" }}
+                  >
                     Current Order
                   </h2>
                 </div>
@@ -303,7 +369,10 @@ const CashierView = () => {
               </div>
 
               <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg px-3 py-2 mb-4 border border-teal-200">
-                <div className="text-xs font-semibold text-teal-700">
+                <div
+                  className="font-semibold text-teal-700"
+                  style={{ fontSize: "0.75rem" }}
+                >
                   Order #{orderNumber}
                 </div>
               </div>
@@ -314,10 +383,16 @@ const CashierView = () => {
                     <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <ShoppingCart className="w-8 h-8 text-teal-500" />
                     </div>
-                    <p className="text-gray-600 font-medium text-sm">
+                    <p
+                      className="text-gray-600 font-medium"
+                      style={{ fontSize: "0.875rem" }}
+                    >
                       No items in order
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p
+                      className="text-gray-500 mt-1"
+                      style={{ fontSize: "0.75rem" }}
+                    >
                       Select items to begin
                     </p>
                   </div>
@@ -328,10 +403,16 @@ const CashierView = () => {
                       className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-3 flex items-center justify-between border-2 border-teal-200 hover:border-teal-300 transition-colors"
                     >
                       <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">
+                        <div
+                          className="font-semibold text-gray-900"
+                          style={{ fontSize: "0.875rem" }}
+                        >
                           {item.name}
                         </div>
-                        <div className="text-xs text-gray-600 mt-0.5">
+                        <div
+                          className="text-gray-600 mt-0.5"
+                          style={{ fontSize: "0.75rem" }}
+                        >
                           ${item.price.toFixed(2)}
                         </div>
                       </div>
@@ -350,19 +431,28 @@ const CashierView = () => {
               {cart.length > 0 && (
                 <>
                   <div className="border-t-2 border-gray-200 pt-4 space-y-2 mb-4">
-                    <div className="flex justify-between text-gray-700 text-sm">
+                    <div
+                      className="flex justify-between text-gray-700"
+                      style={{ fontSize: "0.875rem" }}
+                    >
                       <span>Subtotal</span>
                       <span className="font-semibold">
                         ${getSubtotal().toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-gray-700 text-sm">
+                    <div
+                      className="flex justify-between text-gray-700"
+                      style={{ fontSize: "0.875rem" }}
+                    >
                       <span>Tax (8.5%)</span>
                       <span className="font-semibold">
                         ${getTax().toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
+                    <div
+                      className="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200"
+                      style={{ fontSize: "1.25rem" }}
+                    >
                       <span>Total</span>
                       <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
                         ${getTotal().toFixed(2)}
@@ -370,7 +460,10 @@ const CashierView = () => {
                     </div>
                   </div>
 
-                  <button className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white py-3.5 rounded-lg font-bold text-base hover:from-teal-600 hover:to-blue-600 transition-colors shadow-lg hover:shadow-xl">
+                  <button
+                    className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white py-3.5 rounded-lg font-bold hover:from-teal-600 hover:to-blue-600 transition-colors shadow-lg hover:shadow-xl"
+                    style={{ fontSize: "1rem" }}
+                  >
                     Process Payment
                   </button>
                 </>
