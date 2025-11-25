@@ -302,9 +302,9 @@ const Login = ({ onSuccess }) => {
           <div style={{
             marginTop: '1.5rem',
             padding: '1.25rem',
-            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            background: 'linear-gradient(135deg, #c7cdfe 0%, #1f4ef8 100%)',
             borderRadius: '12px',
-            border: '1px solid #fbbf24',
+            border: '1px solid #c7cdfe',
             display: 'flex',
             alignItems: 'start',
             gap: '0.75rem'
@@ -313,7 +313,7 @@ const Login = ({ onSuccess }) => {
               width: '32px',
               height: '32px',
               borderRadius: '8px',
-              background: '#fbbf24',
+              background: '#1f4ef8',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -325,14 +325,14 @@ const Login = ({ onSuccess }) => {
               <p style={{
                 fontSize: '0.875rem',
                 fontWeight: '600',
-                color: '#92400e',
+                color: '#000096',
                 margin: '0 0 0.25rem 0'
               }}>
                 Demo Mode
               </p>
               <p style={{
                 fontSize: '0.8125rem',
-                color: '#b45309',
+                color: '#000096',
                 margin: 0,
                 lineHeight: '1.4'
               }}>
