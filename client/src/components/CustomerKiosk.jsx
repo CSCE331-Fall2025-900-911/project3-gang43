@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Globe, ZoomIn, Eye, Trash2, X, Mic, ShoppingCart, CreditCard, Search, Plus, Minus, Sun, Moon, Volume2 } from "lucide-react";
-import { getTranslation } from "../utils/translations";
+import GoogleTranslate from "./GoogleTranslate";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState("base");
-  const [language, setLanguage] = useState("en");
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [menuItems, setMenuItems] = useState([]);
@@ -41,10 +40,10 @@ const CustomerKiosk = () => {
   }, []);
 
   const categories = [
-    { id: "all", nameKey: "allItems", icon: "🌟", color: "#3b82f6" },
-    { id: "milk-tea", nameKey: "milkTea", icon: "🧋", color: "#ec4899" },
-    { id: "fruit-tea", nameKey: "fruitTea", icon: "🍹", color: "#f59e0b" },
-    { id: "specialty", nameKey: "specialty", icon: "🍵", color: "#8b5cf6" },
+    { id: "all", name: "All Items", icon: "🌟", color: "#3b82f6" },
+    { id: "milk-tea", name: "Milk Tea", icon: "🧋", color: "#ec4899" },
+    { id: "fruit-tea", name: "Fruit Tea", icon: "🍹", color: "#f59e0b" },
+    { id: "specialty", name: "Specialty", icon: "🍵", color: "#8b5cf6" },
   ];
 
   const addToCart = (item) => {
@@ -89,7 +88,6 @@ const CustomerKiosk = () => {
   };
 
   const fontMultiplier = getFontSizeMultiplier();
-  const t = (key) => getTranslation(key, language);
 
   // Theme colors - using high contrast if enabled, otherwise dark/light mode
   const theme = highContrast ? {
@@ -133,8 +131,8 @@ const CustomerKiosk = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("bubblePOS")}</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>{t("customerKiosk")}</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Customer Kiosk</p>
               </div>
             </div>
 
@@ -157,29 +155,18 @@ const CustomerKiosk = () => {
                 }}
               >
                 <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {t("voiceOrder")}
+                Voice Order
               </button>
 
-              {/* Language Toggle */}
-              <button
-                onClick={() => setLanguage(language === "en" ? "es" : "en")}
-                style={{
-                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: `1px solid ${theme.border}`,
-                  backgroundColor: theme.card,
-                  color: theme.text,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: "500",
-                  fontSize: `${0.875 * fontMultiplier}rem`
-                }}
-              >
-                <Globe style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {language === "en" ? "EN" : "ES"}
-              </button>
+              {/* Google Translate */}
+              <div style={{
+                padding: "0.25rem",
+                borderRadius: "10px",
+                border: `1px solid ${theme.border}`,
+                backgroundColor: theme.card
+              }}>
+                <GoogleTranslate />
+              </div>
 
               {/* Font Size Toggle */}
               <button
@@ -259,7 +246,7 @@ const CustomerKiosk = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {t("categories")}
+                Categories
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
@@ -296,7 +283,7 @@ const CustomerKiosk = () => {
                   }}
                 >
                   <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
-                  <span>{t(category.nameKey)}</span>
+                  <span>{category.name}</span>
                 </button>
               ))}
             </div>
@@ -324,7 +311,7 @@ const CustomerKiosk = () => {
                 }} />
                 <input
                   type="text"
-                  placeholder={t("searchItems")}
+                  placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -343,7 +330,7 @@ const CustomerKiosk = () => {
 
             {loading ? (
               <div style={{ textAlign: "center", fontSize: `${1.25 * fontMultiplier}rem`, color: theme.text }}>
-                {t("loading")}
+                Loading menu...
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
@@ -413,7 +400,7 @@ const CustomerKiosk = () => {
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("currentOrder")}</h2>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
               {cart.length > 0 && (
                 <button
                   onClick={() => setCart([])}
@@ -461,7 +448,7 @@ const CustomerKiosk = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>{t("noItems")}</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -561,11 +548,11 @@ const CustomerKiosk = () => {
               <>
                 <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("subtotal")}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTotal()}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("tax")} (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax()}</span>
                   </div>
                   <div style={{
@@ -574,7 +561,7 @@ const CustomerKiosk = () => {
                     paddingTop: "0.75rem",
                     borderTop: `1px solid ${theme.border}`
                   }}>
-                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>{t("total")}</span>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
                     <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getGrandTotal()}</span>
                   </div>
                 </div>
@@ -611,7 +598,7 @@ const CustomerKiosk = () => {
                   }}
                 >
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
-                  {t("checkout")}
+                  Checkout
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
@@ -625,7 +612,7 @@ const CustomerKiosk = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("hold")}
+                    Hold
                   </button>
                   <button style={{
                     padding: `${0.625 * fontMultiplier}rem`,
@@ -637,7 +624,7 @@ const CustomerKiosk = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("void")}
+                    Void
                   </button>
                 </div>
               </>

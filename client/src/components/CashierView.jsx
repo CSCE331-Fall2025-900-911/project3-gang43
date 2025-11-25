@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
-import { getTranslation } from "../utils/translations";
+import GoogleTranslate from "./GoogleTranslate";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
@@ -8,19 +8,16 @@ const CashierView = () => {
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [language, setLanguage] = useState("en");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
 
-  const t = (key) => getTranslation(key, language);
-
   const categories = [
-    { name: t("milkTea"), icon: "🧋", color: "#ec4899", key: "Milk Tea" },
-    { name: t("fruitTea"), icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
-    { name: t("smoothies"), icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
-    { name: t("coffee"), icon: "☕", color: "#78350f", key: "Coffee" },
-    { name: t("toppings"), icon: "⭐", color: "#14b8a6", key: "Toppings" },
-    { name: t("snacks"), icon: "🍪", color: "#ef4444", key: "Snacks" },
+    { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
+    { name: "Fruit Tea", icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
+    { name: "Smoothies", icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
+    { name: "Coffee", icon: "☕", color: "#78350f", key: "Coffee" },
+    { name: "Toppings", icon: "⭐", color: "#14b8a6", key: "Toppings" },
+    { name: "Snacks", icon: "🍪", color: "#ef4444", key: "Snacks" },
   ];
 
   const menuItems = {
@@ -149,8 +146,8 @@ const CashierView = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("bubblePOS")}</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>{t("downtownStore")}</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store - Terminal #1</p>
               </div>
             </div>
 
@@ -173,29 +170,18 @@ const CashierView = () => {
                 }}
               >
                 <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {t("voiceOrder")}
+                Voice Order
               </button>
 
-              {/* Language Toggle */}
-              <button
-                onClick={() => setLanguage(language === "en" ? "es" : "en")}
-                style={{
-                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: `1px solid ${theme.border}`,
-                  backgroundColor: theme.card,
-                  color: theme.text,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: "500",
-                  fontSize: `${0.875 * fontMultiplier}rem`
-                }}
-              >
-                <Globe style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {language === "en" ? "EN" : "ES"}
-              </button>
+              {/* Google Translate */}
+              <div style={{
+                padding: "0.25rem",
+                borderRadius: "10px",
+                border: `1px solid ${theme.border}`,
+                backgroundColor: theme.card
+              }}>
+                <GoogleTranslate />
+              </div>
 
               {/* Font Size Toggle */}
               <button
@@ -267,7 +253,7 @@ const CashierView = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{t("cashier")}</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
                   width: `${40 * fontMultiplier}px`,
@@ -296,7 +282,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {t("categories")}
+                Categories
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
@@ -345,7 +331,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
               <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
-                {categories.find(c => c.key === selectedCategory)?.name || t("allItems")}
+                {categories.find(c => c.key === selectedCategory)?.name || "All Items"}
               </h2>
 
               {/* Search Bar */}
@@ -353,7 +339,7 @@ const CashierView = () => {
                 <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                 <input
                   type="text"
-                  placeholder={t("searchItems")}
+                  placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -436,7 +422,7 @@ const CashierView = () => {
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("currentOrder")}</h2>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
               {cart.length > 0 && (
                 <button
                   onClick={clearCart}
@@ -465,7 +451,7 @@ const CashierView = () => {
               border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
             }}>
               <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
-                {t("order")} #{orderNumber}
+                Order #{orderNumber}
               </div>
             </div>
 
@@ -484,7 +470,7 @@ const CashierView = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>{t("noItems")}</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -585,11 +571,11 @@ const CashierView = () => {
               <>
                 <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("subtotal")}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("tax")} (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
                   </div>
                   <div style={{
@@ -598,7 +584,7 @@ const CashierView = () => {
                     paddingTop: "0.75rem",
                     borderTop: `1px solid ${theme.border}`
                   }}>
-                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>{t("total")}</span>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
                     <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getTotal().toFixed(2)}</span>
                   </div>
                 </div>
@@ -635,7 +621,7 @@ const CashierView = () => {
                   }}
                 >
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
-                  {t("processPayment")}
+                  Process Payment
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
@@ -649,7 +635,7 @@ const CashierView = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("hold")}
+                    Hold
                   </button>
                   <button style={{
                     padding: `${0.625 * fontMultiplier}rem`,
@@ -661,7 +647,7 @@ const CashierView = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("void")}
+                    Void
                   </button>
                 </div>
               </>

@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { API_URL } from '../services/routes';
-import { getTranslation } from '../utils/translations';
+import GoogleTranslate from './GoogleTranslate';
 import { LogIn, Shield, Sparkles } from 'lucide-react';
 
 const Login = ({ onSuccess }) => {
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState('en');
   const { login } = useAuth();
-
-  const t = (key) => getTranslation(key, language);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -77,36 +74,19 @@ const Login = ({ onSuccess }) => {
         animation: 'float 8s ease-in-out infinite reverse'
       }} />
 
-      {/* Language toggle in top right */}
-      <button
-        onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-        style={{
-          position: 'absolute',
-          top: '2rem',
-          right: '2rem',
-          padding: '0.75rem 1.25rem',
-          borderRadius: '12px',
-          border: 'none',
-          background: 'rgba(255, 255, 255, 0.2)',
-          backdropFilter: 'blur(10px)',
-          color: 'white',
-          fontWeight: '600',
-          fontSize: '0.875rem',
-          cursor: 'pointer',
-          transition: 'all 0.3s',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-          e.currentTarget.style.transform = 'none';
-        }}
-      >
-        {language === 'en' ? '🇺🇸 English' : '🇪🇸 Español'}
-      </button>
+      {/* Google Translate widget in top right */}
+      <div style={{
+        position: 'absolute',
+        top: '2rem',
+        right: '2rem',
+        background: 'rgba(255, 255, 255, 0.2)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        padding: '0.5rem',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }}>
+        <GoogleTranslate />
+      </div>
 
       <div style={{
         background: 'white',
@@ -195,14 +175,14 @@ const Login = ({ onSuccess }) => {
               WebkitTextFillColor: 'transparent',
               marginBottom: '0.5rem'
             }}>
-              {t("welcomeTo")} {t("bubblePOS")}
+              Welcome to BubblePOS
             </h1>
             <p style={{
               fontSize: '1rem',
               color: '#64748b',
               fontWeight: '500'
             }}>
-              {t("signIn")}
+              Sign in to access your dashboard
             </p>
           </div>
 
@@ -271,7 +251,7 @@ const Login = ({ onSuccess }) => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em'
                 }}>
-                  {language === 'en' ? 'or continue with' : 'o continuar con'}
+                  or continue with
                 </span>
               </div>
             </div>
@@ -314,7 +294,7 @@ const Login = ({ onSuccess }) => {
               }}
             >
               <LogIn style={{ width: '20px', height: '20px' }} />
-              {t("continueDemo")}
+              Continue as Demo User
             </button>
           </div>
 
@@ -348,7 +328,7 @@ const Login = ({ onSuccess }) => {
                 color: '#92400e',
                 margin: '0 0 0.25rem 0'
               }}>
-                {t("demoMode")}
+                Demo Mode
               </p>
               <p style={{
                 fontSize: '0.8125rem',
@@ -356,7 +336,7 @@ const Login = ({ onSuccess }) => {
                 margin: 0,
                 lineHeight: '1.4'
               }}>
-                {t("demoDescription")}
+                Use demo login for quick access. No email required.
               </p>
             </div>
           </div>
@@ -370,7 +350,7 @@ const Login = ({ onSuccess }) => {
             lineHeight: '1.6'
           }}>
             <p style={{ margin: 0 }}>
-              {t("agreeText")}{' '}
+              By signing in, you agree to our{' '}
               <a
                 href="#"
                 style={{
@@ -382,9 +362,9 @@ const Login = ({ onSuccess }) => {
                 onMouseEnter={(e) => e.currentTarget.style.color = '#7c3aed'}
                 onMouseLeave={(e) => e.currentTarget.style.color = '#8b5cf6'}
               >
-                {t("termsOfService")}
+                Terms of Service
               </a>
-              {' '}{t("and")}{' '}
+              {' '}and{' '}
               <a
                 href="#"
                 style={{
@@ -396,7 +376,7 @@ const Login = ({ onSuccess }) => {
                 onMouseEnter={(e) => e.currentTarget.style.color = '#7c3aed'}
                 onMouseLeave={(e) => e.currentTarget.style.color = '#8b5cf6'}
               >
-                {t("privacyPolicy")}
+                Privacy Policy
               </a>
             </p>
           </div>
