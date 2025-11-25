@@ -1,99 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { Globe, ZoomIn, Eye, Trash2, X, Youtube } from "lucide-react";
+import { Globe, ZoomIn, Eye, Trash2, X, Youtube, ShoppingCart, CreditCard, Search, Plus, Minus, Sun, Moon, Volume2} from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import GoogleTranslate from "./GoogleTranslate";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState("base");
-  const [language, setLanguage] = useState("en");
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch products from database
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // TODO: Replace with actual API endpoint
-        // const response = await fetch('/api/products');
-        // const data = await response.json();
-        // setMenuItems(data);
-
-        // Placeholder data for now
         const placeholderData = [
-          {
-            product_id: 1,
-            product_name: "Classic Milk Tea",
-            size: "Medium",
-            price: 5.5,
-            is_available: true,
-            category: "milk-tea",
-            image: "🧋",
-          },
-          {
-            product_id: 2,
-            product_name: "Taro Milk Tea",
-            size: "Medium",
-            price: 6.0,
-            is_available: true,
-            category: "milk-tea",
-            image: "🧋",
-          },
-          {
-            product_id: 3,
-            product_name: "Matcha Latte",
-            size: "Medium",
-            price: 6.5,
-            is_available: true,
-            category: "specialty",
-            image: "🍵",
-          },
-          {
-            product_id: 4,
-            product_name: "Fruit Tea",
-            size: "Medium",
-            price: 5.0,
-            is_available: true,
-            category: "fruit-tea",
-            image: "🍹",
-          },
-          {
-            product_id: 5,
-            product_name: "Brown Sugar Boba",
-            size: "Medium",
-            price: 6.5,
-            is_available: true,
-            category: "specialty",
-            image: "🧋",
-          },
-          {
-            product_id: 6,
-            product_name: "Thai Tea",
-            size: "Medium",
-            price: 5.5,
-            is_available: true,
-            category: "milk-tea",
-            image: "🧋",
-          },
-          {
-            product_id: 7,
-            product_name: "Mango Tea",
-            size: "Medium",
-            price: 5.5,
-            is_available: true,
-            category: "fruit-tea",
-            image: "🍹",
-          },
-          {
-            product_id: 8,
-            product_name: "Strawberry Tea",
-            size: "Medium",
-            price: 5.5,
-            is_available: true,
-            category: "fruit-tea",
-            image: "🍹",
-          },
+          { product_id: 1, product_name: "Classic Milk Tea", size: "Traditional black tea with milk", price: 4.5, is_available: true, category: "milk-tea", image: "☕", color: "#f472b6" },
+          { product_id: 2, product_name: "Taro Milk Tea", size: "Creamy taro flavor", price: 5.25, is_available: true, category: "milk-tea", image: "🌱", color: "#c084fc" },
+          { product_id: 3, product_name: "Thai Milk Tea", size: "Spiced with condensed milk", price: 4.75, is_available: true, category: "milk-tea", image: "☕", color: "#fb923c" },
+          { product_id: 4, product_name: "Matcha Milk Tea", size: "Premium matcha blend", price: 5.5, is_available: true, category: "milk-tea", image: "🍃", color: "#4ade80" },
+          { product_id: 5, product_name: "Brown Sugar Milk Tea", size: "Rich brown sugar syrup", price: 6.0, is_available: true, category: "milk-tea", image: "☕", color: "#d97706" },
+          { product_id: 6, product_name: "Hokkaido Milk Tea", size: "Premium Hokkaido milk", price: 5.75, is_available: true, category: "milk-tea", image: "❄️", color: "#60a5fa" },
+          { product_id: 7, product_name: "Mango Tea", size: "Fresh mango flavor", price: 5.0, is_available: true, category: "fruit-tea", image: "🥭", color: "#fbbf24" },
+          { product_id: 8, product_name: "Strawberry Tea", size: "Sweet strawberry blend", price: 5.0, is_available: true, category: "fruit-tea", image: "🍓", color: "#f87171" },
+          { product_id: 9, product_name: "Lychee Tea", size: "Sweet lychee flavor", price: 5.0, is_available: true, category: "fruit-tea", image: "🍑", color: "#fda4af" },
+          { product_id: 10, product_name: "Passion Fruit Tea", size: "Tropical passion fruit", price: 5.25, is_available: true, category: "fruit-tea", image: "🍊", color: "#fb923c" },
         ];
 
         setMenuItems(placeholderData);
@@ -108,22 +41,37 @@ const CustomerKiosk = () => {
   }, []);
 
   const categories = [
-    { id: "all", name: "All Items", icon: "🌟" },
-    { id: "milk-tea", name: "Milk Tea", icon: "🧋" },
-    { id: "fruit-tea", name: "Fruit Tea", icon: "🍹" },
-    { id: "specialty", name: "Specialty", icon: "🍵" },
+    { id: "all", name: "All Items", icon: "🌟", color: "#3b82f6" },
+    { id: "milk-tea", name: "Milk Tea", icon: "🧋", color: "#ec4899" },
+    { id: "fruit-tea", name: "Fruit Tea", icon: "🍹", color: "#f59e0b" },
+    { id: "specialty", name: "Specialty", icon: "🍵", color: "#8b5cf6" },
   ];
 
   const addToCart = (item) => {
-    setCart([...cart, { ...item, cartId: Date.now() }]);
+    const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
+    if (existingItem) {
+      setCart(cart.map(cartItem =>
+        cartItem.product_id === item.product_id
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
+    } else {
+      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+    }
   };
 
   const removeFromCart = (cartId) => {
     setCart(cart.filter((item) => item.cartId !== cartId));
   };
 
-  const getTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+  const updateQuantity = (cartId, delta) => {
+    setCart(cart.map(item => {
+      if (item.cartId === cartId) {
+        const newQuantity = item.quantity + delta;
+        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
   };
 
 const handleYouTubeReviews = async () => {
@@ -215,28 +163,32 @@ const handleYouTubeReviews = async () => {
           (item) => item.category === selectedCategory && item.is_available
         );
 
-  // Theme classes
-  const bgClass = highContrast ? "bg-black" : "bg-white";
-  const cardBgClass = highContrast
-    ? "bg-gray-900 border-yellow-400 border-2"
-    : "bg-white";
-  const textClass = highContrast ? "text-yellow-300" : "text-gray-900";
-  const mutedTextClass = highContrast ? "text-yellow-200" : "text-gray-600";
-  const buttonClass = highContrast
-    ? "bg-yellow-400 text-black hover:bg-yellow-300"
-    : "bg-gray-900 text-white hover:bg-gray-800";
-  const navButtonClass = highContrast
-    ? "bg-gray-800 border-2 border-yellow-400 hover:bg-gray-700"
-    : "bg-gray-100 hover:bg-gray-200";
-  const navButtonActiveClass = highContrast
-    ? "bg-yellow-400 text-black"
-    : "bg-gray-900 text-white";
-  const fontSizeClass =
-    fontSize === "large"
-      ? "text-xl"
-      : fontSize === "xlarge"
-      ? "text-2xl"
-      : "text-base";
+  const getFontSizeMultiplier = () => {
+    if (fontSize === "large") return 1.2;
+    if (fontSize === "xlarge") return 1.4;
+    return 1;
+  };
+
+  const fontMultiplier = getFontSizeMultiplier();
+
+  // Theme colors - using high contrast if enabled, otherwise dark/light mode
+  const theme = highContrast ? {
+    bg: "#000000",
+    card: "#1a1a1a",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
+    hover: "#333333",
+    accent: "#ffeb3b",
+  } : {
+    bg: darkMode ? "#0f172a" : "#f8fafc",
+    card: darkMode ? "#1e293b" : "#ffffff",
+    text: darkMode ? "#f1f5f9" : "#0f172a",
+    textMuted: darkMode ? "#94a3b8" : "#64748b",
+    border: darkMode ? "#334155" : "#e2e8f0",
+    hover: darkMode ? "#334155" : "#f1f5f9",
+    accent: "#3b82f6",
+  };
 
   return (
     <div className={`min-h-screen ${bgClass} p-6`}>
@@ -290,166 +242,495 @@ const handleYouTubeReviews = async () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex gap-6">
-          {/* Menu Section with Left Navigation */}
-          <div
-            className={`flex-1 ${cardBgClass} rounded-2xl overflow-hidden shadow-xl`}
-          >
-            <div className="flex h-[calc(100vh-200px)]">
-              {/* Left Navigation Bar */}
-              <div
-                className={`w-48 ${
-                  highContrast
-                    ? "bg-gray-800 border-r-2 border-yellow-400"
-                    : "bg-purple-50 border-r-2 border-purple-200"
-                } p-4`}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              {/* Voice Order Button */}
+              <button
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "600",
+                  fontSize: `${0.875 * fontMultiplier}rem`,
+                  boxShadow: "0 2px 4px rgba(236, 72, 153, 0.3)"
+                }}
               >
-                <h2 className={`text-lg font-bold ${textClass} mb-4`}>
-                  Categories
-                </h2>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`w-full p-3 rounded-lg transition-all ${fontSizeClass} flex items-center gap-3 ${
-                        selectedCategory === category.id
-                          ? navButtonActiveClass
-                          : `${navButtonClass} ${textClass}`
-                      }`}
-                    >
-                      <span className="text-2xl">{category.icon}</span>
-                      <span className="font-semibold">{category.name}</span>
-                    </button>
-                  ))}
-                </div>
+                <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                Voice Order
+              </button>
+
+              {/* Google Translate */}
+              <div style={{
+                padding: "0.25rem",
+                borderRadius: "10px",
+                border: `1px solid ${theme.border}`,
+                backgroundColor: theme.card
+              }}>
+                <GoogleTranslate />
               </div>
 
-              {/* Right Side - Scrollable Menu Items */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {loading ? (
-                  <div className={`text-center ${textClass} text-xl`}>
-                    Loading menu...
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredItems.map((item) => (
-                      <button
-                        key={item.product_id}
-                        onClick={() => addToCart(item)}
-                        className={`${cardBgClass} ${
-                          highContrast
-                            ? "border-4 border-yellow-400"
-                            : "border-2 border-gray-200"
-                        } rounded-xl p-4 hover:shadow-lg transition-all`}
-                        aria-label={`Add ${
-                          item.product_name
-                        } for $${item.price.toFixed(2)}`}
-                      >
-                        <div className="text-5xl mb-3">{item.image}</div>
-                        <div
-                          className={`font-bold ${textClass} ${fontSizeClass}`}
-                        >
-                          {item.product_name}
-                        </div>
-                        <div className={`${mutedTextClass} text-sm`}>
-                          {item.size}
-                        </div>
-                        <div
-                          className={`${mutedTextClass} text-xl mt-2 font-semibold`}
-                        >
-                          ${item.price.toFixed(2)}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Font Size Toggle */}
+              <button
+                onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
+              </button>
+
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={() => {
+                  setDarkMode(!darkMode);
+                  if (highContrast) setHighContrast(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                {darkMode ? <Sun style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} /> : <Moon style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />}
+              </button>
+
+              {/* High Contrast Toggle */}
+              <button
+                onClick={() => {
+                  setHighContrast(!highContrast);
+                  if (!highContrast) setDarkMode(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
+                  color: highContrast ? "#000" : theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <Eye style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+              </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Order Cart - Right Side */}
-          <div
-            className={`w-96 ${cardBgClass} rounded-2xl p-6 shadow-xl h-[calc(100vh-200px)] flex flex-col`}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className={`text-2xl font-bold ${textClass}`}>Your Order</h2>
+      {/* Main Content */}
+      <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
+        {/* Left Sidebar - Categories */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
+            <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
+              <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Categories
+              </h3>
+            </div>
+            <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: `${0.875 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    marginBottom: "0.5rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    fontWeight: "500",
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    backgroundColor: selectedCategory === category.id ? category.color : "transparent",
+                    color: selectedCategory === category.id ? "white" : theme.text,
+                    transform: selectedCategory === category.id ? "translateX(4px)" : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedCategory !== category.id) {
+                      e.currentTarget.style.backgroundColor = theme.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCategory !== category.id) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Center - Menu Items */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
+              <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
+                {t(categories.find((c) => c.id === selectedCategory)?.nameKey || "allItems")}
+              </h2>
+
+              {/* Search Bar */}
+              <div style={{ position: "relative" }}>
+                <Search style={{
+                  position: "absolute",
+                  left: "1rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: theme.textMuted,
+                  width: `${20 * fontMultiplier}px`,
+                  height: `${20 * fontMultiplier}px`
+                }} />
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem ${0.75 * fontMultiplier}rem ${3 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: highContrast ? "#000" : (darkMode ? "#0f172a" : "#f8fafc"),
+                    color: theme.text,
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    outline: "none"
+                  }}
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: "center", fontSize: `${1.25 * fontMultiplier}rem`, color: theme.text }}>
+                Loading menu...
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+                {filteredItems.map((item) => (
+                  <button
+                    key={item.product_id}
+                    onClick={() => addToCart(item)}
+                    style={{
+                      backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
+                      border: `2px solid ${theme.border}`,
+                      borderRadius: "16px",
+                      padding: `${1.25 * fontMultiplier}rem`,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      textAlign: "center",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow = `0 10px 25px -5px ${item.color}40`;
+                      e.currentTarget.style.borderColor = item.color;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "none";
+                      e.currentTarget.style.borderColor = theme.border;
+                    }}
+                  >
+                    <div style={{
+                      fontSize: `${3 * fontMultiplier}rem`,
+                      marginBottom: "0.75rem",
+                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                    }}>
+                      {item.image}
+                    </div>
+                    <h3 style={{
+                      fontSize: `${0.9375 * fontMultiplier}rem`,
+                      fontWeight: "600",
+                      color: theme.text,
+                      marginBottom: "0.25rem",
+                      lineHeight: "1.3"
+                    }}>
+                      {item.product_name}
+                    </h3>
+                    <p style={{
+                      fontSize: `${0.75 * fontMultiplier}rem`,
+                      color: theme.textMuted,
+                      marginBottom: "0.75rem",
+                      lineHeight: "1.4"
+                    }}>
+                      {item.size}
+                    </p>
+                    <div style={{
+                      fontSize: `${1.25 * fontMultiplier}rem`,
+                      fontWeight: "bold",
+                      color: item.color
+                    }}>
+                      ${item.price.toFixed(2)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Sidebar - Current Order */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
               {cart.length > 0 && (
                 <button
                   onClick={() => setCart([])}
-                  className="text-red-500 hover:text-red-700 font-semibold text-sm"
+                  style={{
+                    padding: "0.5rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor: "transparent",
+                    color: "#ef4444",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  Clear All
+                  <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
                 </button>
               )}
             </div>
 
-            {cart.length === 0 ? (
-              <div
-                className={`flex-1 flex items-center justify-center ${mutedTextClass} text-center`}
-              >
-                <div>
-                  <div className="text-6xl mb-4">🛒</div>
-                  <p className={fontSizeClass}>Your cart is empty</p>
-                  <p className="text-sm mt-2">Add items to get started</p>
-                </div>
+            <div style={{
+              backgroundColor: highContrast ? "#333" : (darkMode ? "#0f172a" : "#f0f9ff"),
+              padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+              borderRadius: "10px",
+              marginBottom: "1rem",
+              border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
+            }}>
+              <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
+                Order #{Math.floor(1000 + Math.random() * 9000)}
               </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+            </div>
+
+            <div style={{ maxHeight: "320px", overflowY: "auto", marginBottom: "1rem" }}>
+              {cart.length === 0 ? (
+                <div style={{ textAlign: "center", padding: `${3 * fontMultiplier}rem 0` }}>
+                  <div style={{
+                    width: `${80 * fontMultiplier}px`,
+                    height: `${80 * fontMultiplier}px`,
+                    borderRadius: "50%",
+                    background: highContrast ? "#333" : (darkMode ? "rgba(59, 130, 246, 0.1)" : "#f0f9ff"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1rem"
+                  }}>
+                    <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
+                  </div>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {cart.map((item) => (
                     <div
                       key={item.cartId}
-                      className={`flex justify-between items-center p-3 ${
-                        highContrast ? "bg-gray-800" : "bg-gray-50"
-                      } rounded-lg`}
+                      style={{
+                        backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#0f172a" : "#f8fafc"),
+                        padding: `${0.75 * fontMultiplier}rem`,
+                        borderRadius: "10px",
+                        border: `1px solid ${theme.border}`
+                      }}
                     >
-                      <div className="flex-1">
-                        <span
-                          className={`${textClass} ${fontSizeClass} font-semibold block`}
-                        >
-                          {item.product_name}
-                        </span>
-                        <span className={`${mutedTextClass} text-sm`}>
-                          {item.size}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`${mutedTextClass} ${fontSizeClass} font-semibold`}
-                        >
-                          ${item.price.toFixed(2)}
-                        </span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.product_name}</div>
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                        </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
-                          className="text-red-500 hover:text-red-700"
-                          aria-label={`Remove ${item.product_name}`}
+                          style={{
+                            padding: "0.25rem",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#ef4444",
+                            cursor: "pointer"
+                          }}
                         >
-                          <X className="w-5 h-5" />
+                          <Trash2 style={{ width: `${16 * fontMultiplier}px`, height: `${16 * fontMultiplier}px` }} />
                         </button>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, -1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.card,
+                            color: theme.text,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          −
+                        </button>
+                        <div style={{
+                          flex: 1,
+                          textAlign: "center",
+                          fontSize: `${0.875 * fontMultiplier}rem`,
+                          fontWeight: "600",
+                          color: theme.text
+                        }}>
+                          {item.quantity}
+                        </div>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, 1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: highContrast ? theme.accent : "#3b82f6",
+                            color: highContrast ? "#000" : "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          +
+                        </button>
+                        <div style={{
+                          fontSize: `${0.875 * fontMultiplier}rem`,
+                          fontWeight: "bold",
+                          color: theme.text,
+                          minWidth: "70px",
+                          textAlign: "right"
+                        }}>
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
 
-                <div
-                  className={`border-t-2 ${
-                    highContrast ? "border-yellow-400" : "border-gray-200"
-                  } pt-4`}
-                >
-                  <div className="flex justify-between mb-4">
-                    <span className={`text-xl font-bold ${textClass}`}>
-                      Total:
-                    </span>
-                    <span className={`text-xl font-bold ${textClass}`}>
-                      ${getTotal()}
-                    </span>
+            {cart.length > 0 && (
+              <>
+                <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTotal()}</span>
                   </div>
-                  <button
-                    className={`w-full ${buttonClass} py-4 rounded-lg font-bold text-xl transition-all`}
-                  >
-                    Checkout
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax()}</span>
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    paddingTop: "0.75rem",
+                    borderTop: `1px solid ${theme.border}`
+                  }}>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
+                    <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getGrandTotal()}</span>
+                  </div>
+                </div>
+
+                <button
+                  style={{
+                    width: "100%",
+                    padding: `${0.875 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                    color: highContrast ? "#000" : "white",
+                    fontWeight: "bold",
+                    fontSize: `${1 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    transition: "all 0.2s",
+                    boxShadow: highContrast ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(59, 130, 246, 0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(59, 130, 246, 0.3)";
+                    }
+                  }}
+                >
+                  <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
+                  Checkout
+                </button>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: theme.card,
+                    color: theme.text,
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    Hold
+                  </button>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    Void
                   </button>
                 </div>
               </>

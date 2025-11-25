@@ -1,108 +1,273 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Trash2, Eye, LayoutGrid, List, Mic } from 'lucide-react';
+import React, { useState } from "react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
+import GoogleTranslate from "./GoogleTranslate";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('Milk Tea');
-  const [viewMode, setViewMode] = useState('grid');
-  const [orderNumber] = useState(1024);
+  const [selectedCategory, setSelectedCategory] = useState("Milk Tea");
+  const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fontSize, setFontSize] = useState("base");
+  const [highContrast, setHighContrast] = useState(false);
 
   const categories = [
-    { name: 'Milk Tea', icon: '🧋' },
-    { name: 'Fruit Tea', icon: '🍹' },
-    { name: 'Smoothies', icon: '🥤' },
-    { name: 'Coffee', icon: '☕' },
-    { name: 'Toppings', icon: '⭐' },
-    { name: 'Snacks', icon: '🍪' }
+    { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
+    { name: "Fruit Tea", icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
+    { name: "Smoothies", icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
+    { name: "Coffee", icon: "☕", color: "#78350f", key: "Coffee" },
+    { name: "Toppings", icon: "⭐", color: "#14b8a6", key: "Toppings" },
+    { name: "Snacks", icon: "🍪", color: "#ef4444", key: "Snacks" },
   ];
 
   const menuItems = {
-    'Milk Tea': [
-      { id: 1, name: 'Classic Milk Tea', description: 'Traditional black tea with milk', price: 4.50, color: 'bg-gradient-to-br from-pink-400 to-pink-500', icon: '☕' },
-      { id: 2, name: 'Taro Milk Tea', description: 'Creamy taro flavor with milk', price: 5.25, color: 'bg-gradient-to-br from-purple-400 to-purple-600', icon: '🧃' },
-      { id: 3, name: 'Thai Milk Tea', description: 'Spiced tea with condensed milk', price: 4.75, color: 'bg-gradient-to-br from-orange-400 to-orange-500', icon: '☕' },
-      { id: 4, name: 'Matcha Milk Tea', description: 'Premium matcha with creamy milk', price: 5.50, color: 'bg-gradient-to-br from-green-400 to-green-500', icon: '🍃' },
-      { id: 5, name: 'Brown Sugar Milk Tea', description: 'Rich brown sugar syrup', price: 6.00, color: 'bg-gradient-to-br from-amber-600 to-amber-700', icon: '☕' },
-      { id: 6, name: 'Hokkaido Milk Tea', description: 'Premium Hokkaido milk', price: 5.75, color: 'bg-gradient-to-br from-blue-400 to-blue-500', icon: '❄️' },
+    "Milk Tea": [
+      { id: 1, name: "Classic Milk Tea", description: "Traditional black tea with milk", price: 4.5, icon: "☕", color: "#f472b6" },
+      { id: 2, name: "Taro Milk Tea", description: "Creamy taro flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
+      { id: 3, name: "Thai Milk Tea", description: "Spiced with condensed milk", price: 4.75, icon: "☕", color: "#fb923c" },
+      { id: 4, name: "Matcha Milk Tea", description: "Premium matcha blend", price: 5.5, icon: "🍃", color: "#4ade80" },
+      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich brown sugar syrup", price: 6.0, icon: "☕", color: "#d97706" },
+      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
     ],
-    'Fruit Tea': [
-      { id: 7, name: 'Mango Tea', description: 'Fresh mango flavor', price: 5.00, color: 'bg-gradient-to-br from-yellow-400 to-orange-400', icon: '🥭' },
-      { id: 8, name: 'Strawberry Tea', description: 'Sweet strawberry blend', price: 5.00, color: 'bg-gradient-to-br from-red-400 to-pink-400', icon: '🍓' },
-      { id: 9, name: 'Passion Fruit Tea', description: 'Tropical passion fruit', price: 5.25, color: 'bg-gradient-to-br from-orange-400 to-yellow-400', icon: '🍊' },
+    "Fruit Tea": [
+      { id: 7, name: "Mango Tea", description: "Fresh mango flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
+      { id: 8, name: "Strawberry Tea", description: "Sweet strawberry blend", price: 5.0, icon: "🍓", color: "#f87171" },
+      { id: 9, name: "Passion Fruit Tea", description: "Tropical passion fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
+      { id: 10, name: "Lychee Tea", description: "Sweet lychee flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
     ],
-    'Smoothies': [
-      { id: 10, name: 'Berry Smoothie', description: 'Mixed berry blend', price: 6.50, color: 'bg-gradient-to-br from-purple-500 to-pink-500', icon: '🫐' },
-      { id: 11, name: 'Mango Smoothie', description: 'Tropical mango', price: 6.00, color: 'bg-gradient-to-br from-yellow-400 to-orange-400', icon: '🥭' },
+    Smoothies: [
+      { id: 11, name: "Berry Smoothie", description: "Mixed berry blend", price: 6.5, icon: "🫐", color: "#a855f7" },
+      { id: 12, name: "Mango Smoothie", description: "Tropical mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
+      { id: 13, name: "Avocado Smoothie", description: "Creamy avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
     ],
-    'Coffee': [
-      { id: 12, name: 'Espresso', description: 'Strong espresso shot', price: 3.50, color: 'bg-gradient-to-br from-amber-700 to-amber-900', icon: '☕' },
-      { id: 13, name: 'Latte', description: 'Smooth milk coffee', price: 4.50, color: 'bg-gradient-to-br from-amber-600 to-amber-700', icon: '☕' },
+    Coffee: [
+      { id: 14, name: "Espresso", description: "Strong espresso shot", price: 3.5, icon: "☕", color: "#92400e" },
+      { id: 15, name: "Latte", description: "Smooth milk coffee", price: 4.5, icon: "☕", color: "#d97706" },
+      { id: 16, name: "Cappuccino", description: "Foamy cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
     ],
-    'Toppings': [
-      { id: 14, name: 'Boba Pearls', description: 'Classic tapioca pearls', price: 0.75, color: 'bg-gradient-to-br from-gray-700 to-gray-800', icon: '⚫' },
-      { id: 15, name: 'Pudding', description: 'Creamy egg pudding', price: 1.00, color: 'bg-gradient-to-br from-yellow-300 to-yellow-400', icon: '🍮' },
+    Toppings: [
+      { id: 17, name: "Boba Pearls", description: "Classic tapioca pearls", price: 0.75, icon: "⚫", color: "#374151" },
+      { id: 18, name: "Pudding", description: "Creamy egg pudding", price: 1.0, icon: "🍮", color: "#fde047" },
+      { id: 19, name: "Aloe Vera", description: "Fresh aloe vera", price: 0.75, icon: "🌿", color: "#22c55e" },
+      { id: 20, name: "Jelly", description: "Fruit jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
     ],
-    'Snacks': [
-      { id: 16, name: 'Popcorn Chicken', description: 'Crispy chicken bites', price: 5.50, color: 'bg-gradient-to-br from-orange-500 to-red-500', icon: '🍗' },
-    ]
+    Snacks: [
+      { id: 21, name: "Popcorn Chicken", description: "Crispy chicken bites", price: 5.5, icon: "🍗", color: "#f97316" },
+      { id: 22, name: "Spring Rolls", description: "Crispy spring rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
+      { id: 23, name: "Fries", description: "Golden french fries", price: 3.5, icon: "🍟", color: "#eab308" },
+    ],
   };
 
   const addToCart = (item) => {
-    setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+    if (existingItem) {
+      setCart(cart.map(cartItem =>
+        cartItem.id === item.id
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      ));
+    } else {
+      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+    }
   };
 
   const removeFromCart = (cartId) => {
-    setCart(cart.filter(item => item.cartId !== cartId));
+    setCart(cart.filter((item) => item.cartId !== cartId));
   };
 
-  const clearCart = () => {
-    setCart([]);
+  const updateQuantity = (cartId, delta) => {
+    setCart(cart.map(item => {
+      if (item.cartId === cartId) {
+        const newQuantity = item.quantity + delta;
+        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
   };
 
-  const getSubtotal = () => {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
+  const clearCart = () => setCart([]);
 
-  const getTax = () => {
-    return getSubtotal() * 0.085;
-  };
-
-  const getTotal = () => {
-    return getSubtotal() + getTax();
-  };
+  const getSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const getTax = () => getSubtotal() * 0.085;
+  const getTotal = () => getSubtotal() + getTax();
 
   const currentItems = menuItems[selectedCategory] || [];
+  const filteredItems = currentItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getFontSizeMultiplier = () => {
+    if (fontSize === "large") return 1.2;
+    if (fontSize === "xlarge") return 1.4;
+    return 1;
+  };
+
+  const fontMultiplier = getFontSizeMultiplier();
+
+  // Theme colors
+  const theme = highContrast ? {
+    bg: "#000000",
+    card: "#1a1a1a",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
+    hover: "#333333",
+    accent: "#ffeb3b",
+  } : {
+    bg: darkMode ? "#0f172a" : "#f8fafc",
+    card: darkMode ? "#1e293b" : "#ffffff",
+    text: darkMode ? "#f1f5f9" : "#0f172a",
+    textMuted: darkMode ? "#94a3b8" : "#64748b",
+    border: darkMode ? "#334155" : "#e2e8f0",
+    hover: darkMode ? "#334155" : "#f1f5f9",
+    accent: "#3b82f6",
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-full mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl font-bold">B</span>
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ padding: "1rem 1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{
+                width: `${50 * fontMultiplier}px`,
+                height: `${50 * fontMultiplier}px`,
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: `${1.5 * fontMultiplier}rem`,
+                boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+              }}>
+                B
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">BubblePOS</h1>
-                <p className="text-sm text-gray-500">Downtown Store - Terminal #1</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store - Terminal #1</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
-                <Mic className="w-4 h-4" />
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              {/* Voice Order Button */}
+              <button
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "600",
+                  fontSize: `${0.875 * fontMultiplier}rem`,
+                  boxShadow: "0 2px 4px rgba(236, 72, 153, 0.3)"
+                }}
+              >
+                <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
                 Voice Order
               </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                Accessibility
+
+              {/* Google Translate */}
+              <div style={{
+                padding: "0.25rem",
+                borderRadius: "10px",
+                border: `1px solid ${theme.border}`,
+                backgroundColor: theme.card
+              }}>
+                <GoogleTranslate />
+              </div>
+
+              {/* Font Size Toggle */}
+              <button
+                onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
               </button>
-              <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">MC</span>
+
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={() => {
+                  setDarkMode(!darkMode);
+                  if (highContrast) setHighContrast(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.card,
+                  color: theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                {darkMode ? <Sun style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} /> : <Moon style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />}
+              </button>
+
+              {/* High Contrast Toggle */}
+              <button
+                onClick={() => {
+                  setHighContrast(!highContrast);
+                  if (!highContrast) setDarkMode(false);
+                }}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
+                  color: highContrast ? "#000" : theme.text,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "500",
+                  fontSize: `${0.875 * fontMultiplier}rem`
+                }}
+              >
+                <Eye style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">Mike Chen</p>
-                  <p className="text-xs text-gray-500">Cashier</p>
+                <div style={{
+                  width: `${40 * fontMultiplier}px`,
+                  height: `${40 * fontMultiplier}px`,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  border: "2px solid #3b82f6"
+                }}>
+                  MC
                 </div>
               </div>
             </div>
@@ -110,149 +275,383 @@ const CashierView = () => {
         </div>
       </div>
 
-      <div className="max-w-full mx-auto p-6">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-8">
-            <div className="bg-white rounded-xl shadow-sm mb-4 p-4">
-              <div className="flex gap-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.name}
-                    onClick={() => setSelectedCategory(category.name)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                      selectedCategory === category.name
-                        ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span>{category.icon}</span>
-                    <span>{category.name}</span>
-                  </button>
-                ))}
+      {/* Main Content */}
+      <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
+        {/* Left Sidebar - Categories */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
+            <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
+              <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Categories
+              </h3>
+            </div>
+            <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
+              {categories.map((category) => (
+                <button
+                  key={category.key}
+                  onClick={() => setSelectedCategory(category.key)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: `${0.875 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    marginBottom: "0.5rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    fontWeight: "500",
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    backgroundColor: selectedCategory === category.key ? category.color : "transparent",
+                    color: selectedCategory === category.key ? "white" : theme.text,
+                    transform: selectedCategory === category.key ? "translateX(4px)" : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedCategory !== category.key) {
+                      e.currentTarget.style.backgroundColor = theme.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedCategory !== category.key) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Center - Menu Items */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
+              <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
+                {categories.find(c => c.key === selectedCategory)?.name || "All Items"}
+              </h2>
+
+              {/* Search Bar */}
+              <div style={{ position: "relative" }}>
+                <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem ${0.75 * fontMultiplier}rem ${3 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: highContrast ? "#000" : (darkMode ? "#0f172a" : "#f8fafc"),
+                    color: theme.text,
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    outline: "none"
+                  }}
+                />
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedCategory} Selection</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    <LayoutGrid className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    <List className="w-5 h-5" />
-                  </button>
-                </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+              {filteredItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => addToCart(item)}
+                  style={{
+                    backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
+                    border: `2px solid ${theme.border}`,
+                    borderRadius: "16px",
+                    padding: `${1.25 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    textAlign: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = `0 10px 25px -5px ${item.color}40`;
+                    e.currentTarget.style.borderColor = item.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.borderColor = theme.border;
+                  }}
+                >
+                  <div style={{
+                    fontSize: `${3 * fontMultiplier}rem`,
+                    marginBottom: "0.75rem",
+                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                  }}>
+                    {item.icon}
+                  </div>
+                  <h3 style={{
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    fontWeight: "600",
+                    color: theme.text,
+                    marginBottom: "0.25rem",
+                    lineHeight: "1.3"
+                  }}>
+                    {item.name}
+                  </h3>
+                  <p style={{
+                    fontSize: `${0.75 * fontMultiplier}rem`,
+                    color: theme.textMuted,
+                    marginBottom: "0.75rem",
+                    lineHeight: "1.4"
+                  }}>
+                    {item.description}
+                  </p>
+                  <div style={{
+                    fontSize: `${1.25 * fontMultiplier}rem`,
+                    fontWeight: "bold",
+                    color: item.color
+                  }}>
+                    ${item.price.toFixed(2)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar - Current Order */}
+        <div>
+          <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
+              {cart.length > 0 && (
+                <button
+                  onClick={clearCart}
+                  style={{
+                    padding: "0.5rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor: "transparent",
+                    color: "#ef4444",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                </button>
+              )}
+            </div>
+
+            <div style={{
+              backgroundColor: highContrast ? "#333" : (darkMode ? "#0f172a" : "#f0f9ff"),
+              padding: `${0.75 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+              borderRadius: "10px",
+              marginBottom: "1rem",
+              border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
+            }}>
+              <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
+                Order #{orderNumber}
               </div>
-              
-              <div className={viewMode === 'grid' ? 'grid grid-cols-3 gap-4' : 'space-y-3'}>
-                {currentItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => addToCart(item)}
-                    className={`${item.color} rounded-xl p-6 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all text-left ${
-                      viewMode === 'list' ? 'flex items-center gap-4' : ''
-                    }`}
-                  >
-                    <div className={`text-5xl mb-2 ${viewMode === 'list' ? 'mb-0' : ''}`}>{item.icon}</div>
-                    <div className="flex-1">
-                      <div className="font-bold text-lg mb-1">{item.name}</div>
-                      <div className="text-sm opacity-90 mb-2">{item.description}</div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-2xl font-bold">${item.price.toFixed(2)}</div>
-                        <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
-                          <span className="text-xl">+</span>
+            </div>
+
+            <div style={{ maxHeight: "320px", overflowY: "auto", marginBottom: "1rem" }}>
+              {cart.length === 0 ? (
+                <div style={{ textAlign: "center", padding: `${3 * fontMultiplier}rem 0` }}>
+                  <div style={{
+                    width: `${80 * fontMultiplier}px`,
+                    height: `${80 * fontMultiplier}px`,
+                    borderRadius: "50%",
+                    background: highContrast ? "#333" : (darkMode ? "rgba(59, 130, 246, 0.1)" : "#f0f9ff"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1rem"
+                  }}>
+                    <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
+                  </div>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {cart.map((item) => (
+                    <div
+                      key={item.cartId}
+                      style={{
+                        backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#0f172a" : "#f8fafc"),
+                        padding: `${0.75 * fontMultiplier}rem`,
+                        borderRadius: "10px",
+                        border: `1px solid ${theme.border}`
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(item.cartId)}
+                          style={{
+                            padding: "0.25rem",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#ef4444",
+                            cursor: "pointer"
+                          }}
+                        >
+                          <Trash2 style={{ width: `${16 * fontMultiplier}px`, height: `${16 * fontMultiplier}px` }} />
+                        </button>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, -1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: `1px solid ${theme.border}`,
+                            backgroundColor: theme.card,
+                            color: theme.text,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          −
+                        </button>
+                        <div style={{
+                          flex: 1,
+                          textAlign: "center",
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
+                          fontWeight: "600",
+                          color: theme.text,
+                          padding: "0.5rem"
+                        }}>
+                          {item.quantity}
+                        </div>
+                        <button
+                          onClick={() => updateQuantity(item.cartId, 1)}
+                          style={{
+                            width: `${32 * fontMultiplier}px`,
+                            height: `${32 * fontMultiplier}px`,
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: highContrast ? theme.accent : "#3b82f6",
+                            color: highContrast ? "#000" : "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: `${1.125 * fontMultiplier}rem`,
+                            fontWeight: "bold"
+                          }}
+                        >
+                          +
+                        </button>
+                        <div style={{
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
+                          fontWeight: "bold",
+                          color: theme.text,
+                          minWidth: "70px",
+                          textAlign: "right"
+                        }}>
+                          ${(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="col-span-4">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-6 h-6 text-pink-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Current Order</h2>
+                  ))}
                 </div>
-                <button
-                  onClick={clearCart}
-                  className="text-red-500 hover:text-red-700"
-                  aria-label="Clear cart"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="text-sm text-gray-500 mb-4">Order #{orderNumber}</div>
-
-              <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-                {cart.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No items in order</p>
-                    <p className="text-sm text-gray-400 mt-1">Select items to add to order</p>
-                  </div>
-                ) : (
-                  cart.map((item) => (
-                    <div key={item.cartId} className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900">{item.name}</div>
-                        <div className="text-sm text-gray-600">${item.price.toFixed(2)}</div>
-                      </div>
-                      <button
-                        onClick={() => removeFromCart(item.cartId)}
-                        className="text-red-500 hover:text-red-700 ml-3"
-                        aria-label={`Remove ${item.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <>
-                  <div className="border-t pt-4 space-y-2 mb-4">
-                    <div className="flex justify-between text-gray-700">
-                      <span>Subtotal</span>
-                      <span>${getSubtotal().toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-700">
-                      <span>Tax (8.5%)</span>
-                      <span>${getTax().toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t">
-                      <span>Total</span>
-                      <span>${getTotal().toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <button className="w-full bg-gradient-to-r from-pink-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg">
-                    💳 Process Payment
-                  </button>
-                  
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <button className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
-                      ⏸️ Hold
-                    </button>
-                    <button className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
-                      ✖️ Void
-                    </button>
-                  </div>
-                </>
               )}
             </div>
+
+            {cart.length > 0 && (
+              <>
+                <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    paddingTop: "0.75rem",
+                    borderTop: `1px solid ${theme.border}`
+                  }}>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
+                    <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  style={{
+                    width: "100%",
+                    padding: `${0.875 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                    color: highContrast ? "#000" : "white",
+                    fontWeight: "bold",
+                    fontSize: `${1 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    transition: "all 0.2s",
+                    boxShadow: highContrast ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(59, 130, 246, 0.4)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!highContrast) {
+                      e.currentTarget.style.transform = "none";
+                      e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(59, 130, 246, 0.3)";
+                    }
+                  }}
+                >
+                  <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
+                  Process Payment
+                </button>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    backgroundColor: theme.card,
+                    color: theme.text,
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    Hold
+                  </button>
+                  <button style={{
+                    padding: `${0.625 * fontMultiplier}rem`,
+                    borderRadius: "8px",
+                    border: "1px solid #fecaca",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    fontWeight: "500",
+                    cursor: "pointer"
+                  }}>
+                    Void
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
