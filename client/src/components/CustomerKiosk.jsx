@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Globe, ZoomIn, Eye, Trash2, X, Mic } from "lucide-react";
+import { Globe, ZoomIn, Eye, Trash2, X, Youtube } from "lucide-react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
@@ -125,6 +126,88 @@ const CustomerKiosk = () => {
     return cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
   };
 
+const handleYouTubeReviews = async () => {
+    if (cart.length === 0) {
+      alert("Empty cart: Add drinks to use the YouTube feature.");
+      return;
+    }
+
+    const drinkNames = [...new Set(cart.map((item) => item.product_name))];
+
+    try {
+      alert(`Ready to search for reviews of: ${drinkNames.join(", ")}`);
+
+      // --- This is the new SDK method ---
+
+      // 2. Get API key from Vite's import.meta.env
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        alert("API Key not found. Please check your .env file and restart your server.");
+        return;
+      }
+
+      // Check if the SDK is available
+      if (!GoogleGenerativeAI) {
+        alert("Google AI SDK not found. Please run 'npm install @google/generative-ai'");
+        return;
+      }
+
+      // 3. Initialize the SDK
+      const genAI = new GoogleGenerativeAI(apiKey);
+      
+      // 4. Get the model. We must use a model that supports tools.
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash", // Use the correct model name
+        tools: [
+          {
+            google_search: {}, // Use 'google_search', not 'google_search_retrieval' for the SDK
+          },
+        ],
+      });
+
+      // 5. Create the prompt with your text
+      const prompt = `I need exactly ONE working link to a blog or article that contains human reviews of all of these bubble tea drinks: ${drinkNames.join(", ")}.
+        Please search the web and find one good blog review website for each drink. The blog/review should contain a review of every drink in the list. Return your response as a JSON array with this exact format:
+        [
+            {"drink": "drink name", "url": "blog url", "title": "site title"},
+            ...
+        ]
+
+        Only return the JSON array, nothing else. Make sure the URL is complete and a valid blog link. Again, DO NOT RETURN more than one link.`;
+
+      // 6. Call the API
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const textContent = response.text();
+      
+      console.log("API Response Text:", textContent);
+
+      // 7. Parse the JSON from the response text
+      const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const videos = JSON.parse(jsonMatch[0]);
+        console.log("Parsed videos:", videos);
+
+        if (videos.length > 0) {
+          videos.forEach((video, index) => {
+            setTimeout(() => {
+              window.open(video.url, "_blank");
+            }, index * 500); // Stagger the opening
+          });
+          alert(`Opening ${videos.length} YouTube review(s) in new tabs!`);
+        } else {
+          alert("No videos found for your drinks.");
+        }
+      } else {
+        alert("Could not parse video results from the API response.");
+      }
+    } catch (error) {
+      console.error("Error fetching YouTube videos:", error);
+      alert(`Failed to fetch video recommendations: ${error.message}`);
+    }
+  };
+
   const filteredItems =
     selectedCategory === "all"
       ? menuItems.filter((item) => item.is_available)
@@ -163,6 +246,7 @@ const CustomerKiosk = () => {
           <h1 className={`text-4xl font-bold ${textClass}`}>Bubble Tea Shop</h1>
           <div className="flex gap-2">
             <button
+              onClick={handleYouTubeReviews}
               className={`px-4 py-3 rounded-lg flex items-center gap-2 ${fontSizeClass} ${
                 highContrast
                   ? "bg-purple-600 text-yellow-300 hover:bg-purple-700 border-2 border-yellow-400"
@@ -170,8 +254,8 @@ const CustomerKiosk = () => {
               } shadow-md hover:shadow-lg transition-all font-semibold`}
               aria-label="Voice order"
             >
-              <Mic className="w-5 h-5" />
-              Voice Order
+              <Youtube className="w-5 h-5" />
+                YouTube Reviews
             </button>
             <button
               className={`p-3 rounded ${cardBgClass} flex items-center gap-2 ${fontSizeClass}`}
