@@ -214,12 +214,12 @@ const ManagerDashboard = () => {
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "1rem", background: "rgba(0,0,0,0.1)", borderRadius: "12px" }}>
           <img 
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" 
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mark" 
             alt="Manager" 
             style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#fff" }}
           />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>Sarah Chen</div>
+            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>Demo Manager</div>
             <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>Store Manager</div>
           </div>
         </div>
@@ -232,7 +232,7 @@ const ManagerDashboard = () => {
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <div>
             <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Dashboard Overview</h2>
-            <p style={{ color: "#64748b", margin: "0.25rem 0 0" }}>Welcome back, Sarah! Here's what's happening at your store today.</p>
+            <p style={{ color: "#64748b", margin: "0.25rem 0 0" }}>Welcome back, Manager! Here's what's happening at your store today.</p>
           </div>
           
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>

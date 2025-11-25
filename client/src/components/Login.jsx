@@ -175,14 +175,14 @@ const Login = ({ onSuccess }) => {
               WebkitTextFillColor: 'transparent',
               marginBottom: '0.5rem'
             }}>
-              Welcome to BubblePOS
+              Welcome to BubblePOS!
             </h1>
             <p style={{
               fontSize: '1rem',
               color: '#64748b',
               fontWeight: '500'
             }}>
-              Sign in to access your dashboard
+                Sign in to access the POS System
             </p>
           </div>
 
@@ -251,7 +251,7 @@ const Login = ({ onSuccess }) => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em'
                 }}>
-                  or continue with
+                        or proceed as
                 </span>
               </div>
             </div>
@@ -302,7 +302,7 @@ const Login = ({ onSuccess }) => {
           <div style={{
             marginTop: '1.5rem',
             padding: '1.25rem',
-            background: 'linear-gradient(135deg, #c7cdfe 0%, #1f4ef8 100%)',
+            background: 'linear-gradient(135deg, #c7cdfe 0%, #4067f5 100%)',
             borderRadius: '12px',
             border: '1px solid #c7cdfe',
             display: 'flex',
