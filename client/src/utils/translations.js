@@ -25,7 +25,7 @@ export const translations = {
 
     currentOrder: "Current Order",
     order: "Order",
-    noItems: "No items in cart",
+    noItems: "Your cart is empty!",
     selectItems: "Select items to add to order",
     subtotal: "Subtotal",
     tax: "Tax",

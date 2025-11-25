@@ -22,39 +22,39 @@ const CashierView = () => {
 
   const menuItems = {
     "Milk Tea": [
-      { id: 1, name: "Classic Milk Tea", description: "Traditional black tea with milk", price: 4.5, icon: "☕", color: "#f472b6" },
-      { id: 2, name: "Taro Milk Tea", description: "Creamy taro flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
-      { id: 3, name: "Thai Milk Tea", description: "Spiced with condensed milk", price: 4.75, icon: "☕", color: "#fb923c" },
-      { id: 4, name: "Matcha Milk Tea", description: "Premium matcha blend", price: 5.5, icon: "🍃", color: "#4ade80" },
-      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich brown sugar syrup", price: 6.0, icon: "☕", color: "#d97706" },
-      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
+      { id: 1, name: "Classic Milk Tea", description: "Traditional Black Tea with Milk", price: 4.5, icon: "☕", color: "#f472b6" },
+      { id: 2, name: "Taro Milk Tea", description: "Creamy Taro Flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
+      { id: 3, name: "Thai Milk Tea", description: "Spiced with Condensed Milk", price: 4.75, icon: "☕", color: "#fb923c" },
+      { id: 4, name: "Matcha Milk Tea", description: "Premium Matcha Blend", price: 5.5, icon: "🍃", color: "#4ade80" },
+      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich Brown Sugar Syrup", price: 6.0, icon: "☕", color: "#d97706" },
+      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido Milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
     ],
     "Fruit Tea": [
-      { id: 7, name: "Mango Tea", description: "Fresh mango flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
-      { id: 8, name: "Strawberry Tea", description: "Sweet strawberry blend", price: 5.0, icon: "🍓", color: "#f87171" },
-      { id: 9, name: "Passion Fruit Tea", description: "Tropical passion fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
-      { id: 10, name: "Lychee Tea", description: "Sweet lychee flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
+      { id: 7, name: "Mango Tea", description: "Fresh Mango Flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
+      { id: 8, name: "Strawberry Tea", description: "Sweet Strawberry Blend", price: 5.0, icon: "🍓", color: "#f87171" },
+      { id: 9, name: "Passion Fruit Tea", description: "Tropical Passion Fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
+      { id: 10, name: "Lychee Tea", description: "Sweet Lychee Flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
     ],
     Smoothies: [
-      { id: 11, name: "Berry Smoothie", description: "Mixed berry blend", price: 6.5, icon: "🫐", color: "#a855f7" },
-      { id: 12, name: "Mango Smoothie", description: "Tropical mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
-      { id: 13, name: "Avocado Smoothie", description: "Creamy avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
+      { id: 11, name: "Berry Smoothie", description: "Mixed Berry Blend", price: 6.5, icon: "🫐", color: "#a855f7" },
+      { id: 12, name: "Mango Smoothie", description: "Tropical Mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
+      { id: 13, name: "Avocado Smoothie", description: "Creamy Avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
     ],
     Coffee: [
-      { id: 14, name: "Espresso", description: "Strong espresso shot", price: 3.5, icon: "☕", color: "#92400e" },
-      { id: 15, name: "Latte", description: "Smooth milk coffee", price: 4.5, icon: "☕", color: "#d97706" },
-      { id: 16, name: "Cappuccino", description: "Foamy cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
+      { id: 14, name: "Espresso", description: "Strong Espresso Shot", price: 3.5, icon: "☕", color: "#92400e" },
+      { id: 15, name: "Latte", description: "Smooth Milk Coffee", price: 4.5, icon: "☕", color: "#d97706" },
+      { id: 16, name: "Cappuccino", description: "Foamy Cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
     ],
     Toppings: [
-      { id: 17, name: "Boba Pearls", description: "Classic tapioca pearls", price: 0.75, icon: "⚫", color: "#374151" },
-      { id: 18, name: "Pudding", description: "Creamy egg pudding", price: 1.0, icon: "🍮", color: "#fde047" },
-      { id: 19, name: "Aloe Vera", description: "Fresh aloe vera", price: 0.75, icon: "🌿", color: "#22c55e" },
-      { id: 20, name: "Jelly", description: "Fruit jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
+      { id: 17, name: "Boba Pearls", description: "Classic Tapioca Pearls", price: 0.75, icon: "⚫", color: "#374151" },
+      { id: 18, name: "Pudding", description: "Creamy Egg Pudding", price: 1.0, icon: "🍮", color: "#fde047" },
+      { id: 19, name: "Aloe Vera", description: "Fresh Aloe Vera", price: 0.75, icon: "🌿", color: "#22c55e" },
+      { id: 20, name: "Jelly", description: "Fruit Jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
     ],
     Snacks: [
-      { id: 21, name: "Popcorn Chicken", description: "Crispy chicken bites", price: 5.5, icon: "🍗", color: "#f97316" },
-      { id: 22, name: "Spring Rolls", description: "Crispy spring rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
-      { id: 23, name: "Fries", description: "Golden french fries", price: 3.5, icon: "🍟", color: "#eab308" },
+      { id: 21, name: "Popcorn Chicken", description: "Crispy Chicken Bites", price: 5.5, icon: "🍗", color: "#f97316" },
+      { id: 22, name: "Spring Rolls", description: "Crispy Spring Rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
+      { id: 23, name: "Fries", description: "Golden French Fries", price: 3.5, icon: "🍟", color: "#eab308" },
     ],
   };
 
@@ -267,7 +267,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                  MC
+                DC
                 </div>
               </div>
             </div>
@@ -470,7 +470,7 @@ const CashierView = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>Your cart is empty!</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
