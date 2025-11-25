@@ -108,11 +108,11 @@ const CashierView = () => {
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
-    text: "#ffeb3b",
-    textMuted: "#fdd835",
-    border: "#ffeb3b",
+    text: "#6d499c",
+    textMuted: "#8f79e8",
+    border: "#6d499c",
     hover: "#333333",
-    accent: "#ffeb3b",
+    accent: "#6d499c",
   } : {
     bg: darkMode ? "#0f172a" : "#f8fafc",
     card: darkMode ? "#1e293b" : "#ffffff",
@@ -201,7 +201,7 @@ const CashierView = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
+                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
               </button>
 
               {/* Dark Mode Toggle */}
@@ -237,7 +237,7 @@ const CashierView = () => {
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
                   borderRadius: "10px",
                   border: `1px solid ${theme.border}`,
-                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
+                  backgroundColor: highContrast ? "#6d499c" : theme.card,
                   color: highContrast ? "#000" : theme.text,
                   cursor: "pointer",
                   display: "flex",
@@ -252,7 +252,7 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Demo Cashier</div>
                   <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{

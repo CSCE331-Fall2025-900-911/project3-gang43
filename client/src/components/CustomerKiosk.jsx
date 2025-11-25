@@ -6,6 +6,7 @@ const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState("base");
   const [cart, setCart] = useState([]);
+  const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,11 +94,11 @@ const CustomerKiosk = () => {
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
-    text: "#ffeb3b",
+    text: "#6d499c",
     textMuted: "#fdd835",
-    border: "#ffeb3b",
+    border: "#6d499c",
     hover: "#333333",
-    accent: "#ffeb3b",
+    accent: "#6d499c",
   } : {
     bg: darkMode ? "#0f172a" : "#f8fafc",
     card: darkMode ? "#1e293b" : "#ffffff",
@@ -222,7 +223,7 @@ const CustomerKiosk = () => {
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
                   borderRadius: "10px",
                   border: `1px solid ${theme.border}`,
-                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
+                  backgroundColor: highContrast ? "#6d499c" : theme.card,
                   color: highContrast ? "#000" : theme.text,
                   cursor: "pointer",
                   display: "flex",
@@ -429,7 +430,7 @@ const CustomerKiosk = () => {
               border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
             }}>
               <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
-                Order #{Math.floor(1000 + Math.random() * 9000)}
+                Order #{orderNumber}
               </div>
             </div>
 
