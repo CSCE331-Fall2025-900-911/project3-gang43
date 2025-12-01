@@ -296,7 +296,7 @@ const CustomerKiosk = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
               <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
-                {t(categories.find((c) => c.id === selectedCategory)?.nameKey || "allItems")}
+                {categories.find((c) => c.id === selectedCategory)?.name || "All Items"}
               </h2>
 
               {/* Search Bar */}
