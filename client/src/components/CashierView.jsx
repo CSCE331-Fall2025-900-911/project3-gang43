@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import {
-  ShoppingCart, Trash2, CreditCard, Sun, Moon, Search,
-  ZoomIn, Eye, Globe, Volume2
-} from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
 import { getTranslation } from "../utils/translations";
 
 const CashierView = () => {
@@ -14,11 +11,6 @@ const CashierView = () => {
   const [language, setLanguage] = useState("en");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
-
-  // Customization modal state
-  const [showCustomization, setShowCustomization] = useState(null);
-  const defaultCustomizations = { sugar: "100%", ice: "Normal", toppings: [] };
-  const [tempCustomizations, setTempCustomizations] = useState(defaultCustomizations);
 
   const t = (key) => getTranslation(key, language);
 
@@ -69,62 +61,16 @@ const CashierView = () => {
     ],
   };
 
-  // Font multiplier (from your original)
-  const getFontSizeMultiplier = () => {
-    if (fontSize === "large") return 1.2;
-    if (fontSize === "xlarge") return 1.4;
-    return 1;
-  };
-  const fontMultiplier = getFontSizeMultiplier();
-
-  // Theme (from your original), preserved
-  const theme = highContrast ? {
-    bg: "#000000",
-    card: "#1a1a1a",
-    text: "#ffeb3b",
-    textMuted: "#fdd835",
-    border: "#ffeb3b",
-    hover: "#333333",
-    accent: "#ffeb3b",
-  } : {
-    bg: darkMode ? "#0f172a" : "#f8fafc",
-    card: darkMode ? "#1e293b" : "#ffffff",
-    text: darkMode ? "#f1f5f9" : "#0f172a",
-    textMuted: darkMode ? "#94a3b8" : "#64748b",
-    border: darkMode ? "#334155" : "#e2e8f0",
-    hover: darkMode ? "#334155" : "#f1f5f9",
-    accent: "#3b82f6",
-  };
-
-  // Helpers: category items and search
-  const currentItems = menuItems[selectedCategory] || [];
-  const filteredItems = currentItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Add to cart, integrating topping prices
-  const addToCart = (item, customizations) => {
-    const toppingCost = (customizations?.toppings || []).reduce((sum, toppingName) => {
-      const topping = menuItems["Toppings"].find(t => t.name === toppingName);
-      return sum + (topping ? topping.price : 0);
-    }, 0);
-    const finalPrice = item.price + toppingCost;
-
-    const existingItem = cart.find(
-      cartItem =>
-        cartItem.id === item.id &&
-        JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
-    );
-
+  const addToCart = (item) => {
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
       setCart(cart.map(cartItem =>
-        cartItem.id === item.id &&
-        JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+        cartItem.id === item.id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ));
     } else {
-      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1, customizations, finalPrice }]);
+      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
     }
   };
 
@@ -144,31 +90,40 @@ const CashierView = () => {
 
   const clearCart = () => setCart([]);
 
-  const getSubtotal = () => cart.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
+  const getSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const getTax = () => getSubtotal() * 0.085;
   const getTotal = () => getSubtotal() + getTax();
 
-  // Open customization for beverages; add directly for toppings/snacks if desired
-  const handleItemClick = (item) => {
-    const beverageCategories = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee"];
-    if (beverageCategories.includes(selectedCategory)) {
-      setTempCustomizations(defaultCustomizations);
-      setShowCustomization(item);
-    } else {
-      // Non-drink items add directly
-      addToCart(item, { sugar: null, ice: null, toppings: [] });
-    }
+  const currentItems = menuItems[selectedCategory] || [];
+  const filteredItems = currentItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getFontSizeMultiplier = () => {
+    if (fontSize === "large") return 1.2;
+    if (fontSize === "xlarge") return 1.4;
+    return 1;
   };
 
-  // Toggle topping selection in modal
-  const toggleTopping = (toppingName) => {
-    setTempCustomizations((prev) => {
-      const exists = prev.toppings.includes(toppingName);
-      const toppings = exists
-        ? prev.toppings.filter(t => t !== toppingName)
-        : [...prev.toppings, toppingName];
-      return { ...prev, toppings };
-    });
+  const fontMultiplier = getFontSizeMultiplier();
+
+  // Theme colors
+  const theme = highContrast ? {
+    bg: "#000000",
+    card: "#1a1a1a",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
+    hover: "#333333",
+    accent: "#ffeb3b",
+  } : {
+    bg: darkMode ? "#0f172a" : "#f8fafc",
+    card: darkMode ? "#1e293b" : "#ffffff",
+    text: darkMode ? "#f1f5f9" : "#0f172a",
+    textMuted: darkMode ? "#94a3b8" : "#64748b",
+    border: darkMode ? "#334155" : "#e2e8f0",
+    hover: darkMode ? "#334155" : "#f1f5f9",
+    accent: "#3b82f6",
   };
 
   return (
@@ -200,7 +155,7 @@ const CashierView = () => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-              {/* Voice Order Button (non-functional placeholder) */}
+              {/* Voice Order Button */}
               <button
                 style={{
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
@@ -419,7 +374,7 @@ const CashierView = () => {
               {filteredItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => handleItemClick(item)}
+                  onClick={() => addToCart(item)}
                   style={{
                     backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
                     border: `2px solid ${theme.border}`,
@@ -546,19 +501,7 @@ const CashierView = () => {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
-                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>
-                            ${item.finalPrice ? item.finalPrice.toFixed(2) : item.price.toFixed(2)} {item.finalPrice && item.finalPrice !== item.price ? "(incl. toppings)" : ""}
-                          </div>
-                          {/* Customizations display */}
-                          {item.customizations && (
-                            <div style={{ marginTop: "0.25rem", fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, lineHeight: 1.4 }}>
-                              {item.customizations.sugar && <div>• Sugar: {item.customizations.sugar}</div>}
-                              {item.customizations.ice && <div>• Ice: {item.customizations.ice}</div>}
-                              {item.customizations.toppings?.length > 0 && (
-                                <div>• Toppings: {item.customizations.toppings.join(", ")}</div>
-                              )}
-                            </div>
-                          )}
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
@@ -629,7 +572,7 @@ const CashierView = () => {
                           minWidth: "70px",
                           textAlign: "right"
                         }}>
-                          ${( (item.finalPrice || item.price) * item.quantity ).toFixed(2)}
+                          ${(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -726,196 +669,6 @@ const CashierView = () => {
           </div>
         </div>
       </div>
-
-      {/* Customization Modal */}
-      {showCustomization && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-            zIndex: 50
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "460px",
-              backgroundColor: theme.card,
-              color: theme.text,
-              border: `1px solid ${theme.border}`,
-              borderRadius: "16px",
-              boxShadow: "0 15px 40px rgba(0,0,0,0.25)",
-              padding: `${1.25 * fontMultiplier}rem`
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: `${1 * fontMultiplier}rem` }}>
-              <h3 style={{ margin: 0, fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: 700 }}>{showCustomization.name}</h3>
-              <div style={{ fontWeight: 700, color: theme.textMuted }}>${showCustomization.price.toFixed(2)}</div>
-            </div>
-
-            {/* Sugar */}
-            <div style={{ marginBottom: `${1 * fontMultiplier}rem` }}>
-              <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: 600, marginBottom: "0.5rem" }}>Sugar</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.5rem" }}>
-                {["0%", "25%", "50%", "75%", "100%"].map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setTempCustomizations({ ...tempCustomizations, sugar: opt })}
-                    style={{
-                      padding: "0.5rem",
-                      borderRadius: "8px",
-                      border: `1px solid ${theme.border}`,
-                      backgroundColor: tempCustomizations.sugar === opt ? (highContrast ? theme.accent : "#3b82f6") : theme.card,
-                      color: tempCustomizations.sugar === opt ? (highContrast ? "#000" : "#fff") : theme.text,
-                      fontWeight: 600,
-                      cursor: "pointer"
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Ice */}
-            <div style={{ marginBottom: `${1 * fontMultiplier}rem` }}>
-              <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: 600, marginBottom: "0.5rem" }}>Ice</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem" }}>
-                {["None", "Less", "Normal", "Extra"].map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setTempCustomizations({ ...tempCustomizations, ice: opt })}
-                    style={{
-                      padding: "0.5rem",
-                      borderRadius: "8px",
-                      border: `1px solid ${theme.border}`,
-                      backgroundColor: tempCustomizations.ice === opt ? (highContrast ? theme.accent : "#3b82f6") : theme.card,
-                      color: tempCustomizations.ice === opt ? (highContrast ? "#000" : "#fff") : theme.text,
-                      fontWeight: 600,
-                      cursor: "pointer"
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Toppings */}
-            <div style={{ marginBottom: `${1 * fontMultiplier}rem` }}>
-              <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: 600, marginBottom: "0.5rem" }}>Toppings</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                {menuItems["Toppings"].map((topping) => {
-                  const checked = tempCustomizations.toppings.includes(topping.name);
-                  return (
-                    <label
-                      key={topping.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        padding: "0.5rem",
-                        borderRadius: "8px",
-                        border: `1px solid ${checked ? (highContrast ? theme.accent : "#3b82f6") : theme.border}`,
-                        backgroundColor: checked ? (highContrast ? "#000" : (darkMode ? "#1e293b" : "#f8fafc")) : theme.card,
-                        cursor: "pointer"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleTopping(topping.name)}
-                        style={{ width: "16px", height: "16px" }}
-                      />
-                      <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ color: theme.text }}>{topping.name}</span>
-                        <span style={{ color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price summary */}
-            <div style={{
-              marginTop: "0.5rem",
-              padding: "0.75rem",
-              borderRadius: "10px",
-              backgroundColor: highContrast ? "#333" : (darkMode ? "#0f172a" : "#f0f9ff"),
-              border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem", color: theme.text }}>
-                <span>Base</span>
-                <span>${showCustomization.price.toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem", color: theme.text }}>
-                <span>Toppings</span>
-                <span>
-                  $
-                  {tempCustomizations.toppings.reduce((sum, name) => {
-                    const t = menuItems["Toppings"].find(tt => tt.name === name);
-                    return sum + (t ? t.price : 0);
-                  }, 0).toFixed(2)}
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, color: highContrast ? theme.accent : "#3b82f6" }}>
-                <span>Total</span>
-                <span>
-                  $
-                  {(
-                    showCustomization.price +
-                    tempCustomizations.toppings.reduce((sum, name) => {
-                      const t = menuItems["Toppings"].find(tt => tt.name === name);
-                      return sum + (t ? t.price : 0);
-                    }, 0)
-                  ).toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "1rem" }}>
-              <button
-                onClick={() => {
-                  addToCart(showCustomization, tempCustomizations);
-                  setShowCustomization(null);
-                }}
-                style={{
-                  padding: `${0.75 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: "none",
-                  background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                  color: highContrast ? "#000" : "#fff",
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}
-              >
-                Add to cart
-              </button>
-              <button
-                onClick={() => setShowCustomization(null)}
-                style={{
-                  padding: `${0.75 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: `1px solid ${theme.border}`,
-                  backgroundColor: theme.card,
-                  color: theme.text,
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
