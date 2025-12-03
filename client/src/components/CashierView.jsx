@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 
@@ -10,6 +11,7 @@ const CashierView = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
+  const { user } = useAuth();
 
   const categories = [
     { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
@@ -252,7 +254,7 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Demo Cashier</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Demo Cashier'}</div>
                   <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
