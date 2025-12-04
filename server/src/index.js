@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
+import productsRouter from "./routes/products.js";
+import ordersRouter from "./routes/orders.js";
 
 dotenv.config();
 
@@ -24,13 +26,16 @@ app.use(
     credentials: true,
   })
 );
-app.options("*", cors());
 console.log("CORS origins allowed:", corsOrigins);
 app.use(express.json());
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+console.log('[Server] Express app initialized');
+console.log('[Server] Google Client ID configured:', !!process.env.GOOGLE_CLIENT_ID);
+
 app.get("/api", (req, res) => {
+  console.log('[Server] GET /api');
   res.json({ message: "Server is running" });
 });
 
@@ -70,6 +75,13 @@ app.post("/api/auth/google", async (req, res) => {
 app.get("/api/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
+
+// API Routes
+console.log('[Server] Registering API routes...');
+app.use("/api/products", productsRouter);
+console.log('[Server] ✓ Products router registered');
+app.use("/api/orders", ordersRouter);
+console.log('[Server] ✓ Orders router registered');
 
 // Weather API endpoint
 app.get("/api/weather", async (req, res) => {
