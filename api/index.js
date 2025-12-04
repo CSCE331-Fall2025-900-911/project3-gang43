@@ -3,6 +3,7 @@ import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
 import productsRouter from "../server/src/routes/products.js";
 import ordersRouter from "../server/src/routes/orders.js";
+import pool from "../server/src/config/db.js";
 
 // Initialize Express app
 const app = express();
@@ -74,6 +75,17 @@ app.get("/debug", (req, res) => {
       isVercel: !!process.env.VERCEL,
     }
   });
+});
+
+// Health endpoint that checks DB connectivity (useful in Vercel logs)
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return res.json({ success: true, message: 'OK', db: 'connected' });
+  } catch (err) {
+    console.error('[Health] DB check failed:', err && err.message ? err.message : err);
+    return res.status(500).json({ success: false, message: 'DB connection failed', error: err.message || String(err) });
+  }
 });
 
 app.post("/auth/google", async (req, res) => {
