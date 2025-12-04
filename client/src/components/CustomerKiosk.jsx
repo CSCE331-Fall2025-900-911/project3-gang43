@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Globe, ZoomIn, Eye, Trash2, X, Mic, ShoppingCart, CreditCard, Search, Plus, Minus, Sun, Moon, Volume2 } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
+import useVoiceControl from "../hooks/useVoiceControl";
+import VoiceControlPanel from "./VoiceControlPanel";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
@@ -12,6 +14,7 @@ const CustomerKiosk = () => {
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [commandFeedback, setCommandFeedback] = useState(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -89,6 +92,133 @@ const CustomerKiosk = () => {
   };
 
   const fontMultiplier = getFontSizeMultiplier();
+
+  // Voice command handler
+  const handleVoiceCommand = useCallback((command) => {
+    const lowerCommand = command.toLowerCase().trim();
+
+    // Add to cart commands
+    const addPatterns = [
+      /add (.*)/,
+      /i want (.*)/,
+      /order (.*)/,
+      /get me (.*)/,
+      /can i have (.*)/
+    ];
+
+    // Remove from cart commands
+    const removePatterns = [
+      /remove (.*)/,
+      /delete (.*)/,
+      /take out (.*)/
+    ];
+
+    // Navigation commands
+    if (lowerCommand.includes('show all') || lowerCommand.includes('all items')) {
+      setSelectedCategory('all');
+      setCommandFeedback({ success: true, message: 'Showing all items' });
+      return;
+    }
+
+    if (lowerCommand.includes('milk tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
+      setSelectedCategory('milk-tea');
+      setCommandFeedback({ success: true, message: 'Showing milk tea' });
+      return;
+    }
+
+    if (lowerCommand.includes('fruit tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
+      setSelectedCategory('fruit-tea');
+      setCommandFeedback({ success: true, message: 'Showing fruit tea' });
+      return;
+    }
+
+    if (lowerCommand.includes('clear cart')) {
+      setCart([]);
+      setCommandFeedback({ success: true, message: 'Cart cleared' });
+      return;
+    }
+
+    if (lowerCommand.includes('checkout') || lowerCommand.includes('place order')) {
+      if (cart.length > 0) {
+        setCommandFeedback({ success: true, message: 'Ready to checkout!' });
+      } else {
+        setCommandFeedback({ success: false, message: 'Your cart is empty' });
+      }
+      return;
+    }
+
+    // Try to match add patterns
+    for (const pattern of addPatterns) {
+      const match = lowerCommand.match(pattern);
+      if (match) {
+        const itemName = match[1];
+        const item = menuItems.find(m =>
+          m.product_name.toLowerCase().includes(itemName) ||
+          itemName.includes(m.product_name.toLowerCase())
+        );
+
+        if (item) {
+          addToCart(item);
+          setCommandFeedback({
+            success: true,
+            message: `Added ${item.product_name} to cart`
+          });
+          return;
+        } else {
+          setCommandFeedback({
+            success: false,
+            message: `Could not find "${itemName}"`
+          });
+          return;
+        }
+      }
+    }
+
+    // Try to match remove patterns
+    for (const pattern of removePatterns) {
+      const match = lowerCommand.match(pattern);
+      if (match) {
+        const itemName = match[1];
+        const cartItem = cart.find(c =>
+          c.product_name.toLowerCase().includes(itemName) ||
+          itemName.includes(c.product_name.toLowerCase())
+        );
+
+        if (cartItem) {
+          removeFromCart(cartItem.cartId);
+          setCommandFeedback({
+            success: true,
+            message: `Removed ${cartItem.product_name} from cart`
+          });
+          return;
+        } else {
+          setCommandFeedback({
+            success: false,
+            message: `"${itemName}" not found in cart`
+          });
+          return;
+        }
+      }
+    }
+
+    // If no pattern matched
+    setCommandFeedback({
+      success: false,
+      message: 'Command not recognized. Try "Add [drink name]"'
+    });
+  }, [menuItems, cart, addToCart, removeFromCart]);
+
+  // Voice control hook
+  const {
+    isListening,
+    transcript,
+    isSupported,
+    error,
+    toggleListening
+  } = useVoiceControl({
+    onCommand: handleVoiceCommand,
+    enabled: true
+  });
 
   // Theme colors - using high contrast if enabled, otherwise dark/light mode
   const theme = highContrast ? {
@@ -633,6 +763,16 @@ const CustomerKiosk = () => {
           </div>
         </div>
       </div>
+
+      {/* Voice Control Panel */}
+      <VoiceControlPanel
+        isListening={isListening}
+        transcript={transcript}
+        isSupported={isSupported}
+        error={error}
+        onToggle={toggleListening}
+        commandFeedback={commandFeedback}
+      />
     </div>
   );
 };

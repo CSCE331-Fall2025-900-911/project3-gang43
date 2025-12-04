@@ -3,8 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
+import React, { useState } from "react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
 
 const CashierView = () => {
+  const { user } = useAuth();
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
@@ -98,6 +102,8 @@ const CashierView = () => {
       // ensure cart item has a friendly `name` property for legacy UI usage
       setCart([...cart, { ...item, name: item.product_name || item.name, price: Number(item.price), cartId: Date.now(), quantity: 1 }]);
     }
+
+    setCustomizingItem(null);
   };
 
   const removeFromCart = (cartId) => {
@@ -212,11 +218,11 @@ const CashierView = () => {
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
-    text: "#6d499c",
-    textMuted: "#8f79e8",
-    border: "#6d499c",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
     hover: "#333333",
-    accent: "#6d499c",
+    accent: "#ffeb3b",
   } : {
     bg: darkMode ? "#0f172a" : "#f8fafc",
     card: darkMode ? "#1e293b" : "#ffffff",
@@ -228,7 +234,7 @@ const CashierView = () => {
   };
 
   return (
-    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
       {/* Header */}
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
@@ -250,8 +256,8 @@ const CashierView = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store - Terminal #1</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Bubble POS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store</p>
               </div>
             </div>
 
@@ -277,16 +283,6 @@ const CashierView = () => {
                 Voice Order
               </button>
 
-              {/* Google Translate */}
-              <div style={{
-                padding: "0.25rem",
-                borderRadius: "10px",
-                border: `1px solid ${theme.border}`,
-                backgroundColor: theme.card
-              }}>
-                <GoogleTranslate />
-              </div>
-
               {/* Font Size Toggle */}
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
@@ -305,7 +301,7 @@ const CashierView = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
               </button>
 
               {/* Dark Mode Toggle */}
@@ -341,7 +337,7 @@ const CashierView = () => {
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
                   borderRadius: "10px",
                   border: `1px solid ${theme.border}`,
-                  backgroundColor: highContrast ? "#6d499c" : theme.card,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
                   color: highContrast ? "#000" : theme.text,
                   cursor: "pointer",
                   display: "flex",
@@ -356,8 +352,8 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{displayName}</div>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Cashier'}</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{user?.role || 'Cashier'}</div>
                 </div>
                 <div style={{
                   width: `${40 * fontMultiplier}px`,
@@ -371,7 +367,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                {initials}
+                  MC
                 </div>
               </div>
             </div>
@@ -386,7 +382,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Categories
+                CATEGORIES
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
@@ -587,7 +583,7 @@ const CashierView = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>Your cart is empty!</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -813,6 +809,182 @@ const CashierView = () => {
           </div>
         </div>
       </div>
+
+      {/* Customization Modal */}
+      {customizingItem && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10000 // Increased z-index to ensure it sits on top of other fixed elements
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "600px",
+            maxHeight: "90vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem.icon}</div>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                    {customizingItem.name}
+                  </h3>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${customizingItem.price.toFixed(2)}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCustomizingItem(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
+              {/* Sugar Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Sugar Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {sugarOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setSugarLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: sugarLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: sugarLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: sugarLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: sugarLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ice Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {iceOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setIceLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: iceLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: iceLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: iceLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: iceLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toppings */}
+              <div>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Toppings</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
+                  {menuItems["Toppings"].map((topping) => {
+                    const isSelected = selectedToppings.some(t => t.id === topping.id);
+                    return (
+                      <button
+                        key={topping.id}
+                        onClick={() => toggleTopping(topping)}
+                        style={{
+                          padding: "0.75rem",
+                          borderRadius: "8px",
+                          border: isSelected ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                          backgroundColor: isSelected ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                          color: theme.text,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span>{topping.icon}</span>
+                          <span>{topping.name}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
+                          {isSelected && <Check size={16} color="#3b82f6" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: "1.5rem",
+              borderTop: `1px solid ${theme.border}`,
+              backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
+            }}>
+              <button
+                onClick={() => addToCart(customizingItem, { sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.125rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                }}
+              >
+                Add to Order - ${(customizingItem.price + selectedToppings.reduce((sum, t) => sum + t.price, 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
