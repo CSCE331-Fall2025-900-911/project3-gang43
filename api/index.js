@@ -88,6 +88,24 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Temporary debug route: run the same categories query the app uses and return result or full error
+// WARNING: This endpoint returns detailed error information and should be removed after debugging.
+app.get('/debug/db-categories', async (req, res) => {
+  try {
+    console.log('[Debug] Running categories query via pool');
+    const result = await pool.query(`
+      SELECT DISTINCT category
+      FROM products
+      WHERE is_available = true
+      ORDER BY category
+    `);
+    return res.json({ success: true, rows: result.rows });
+  } catch (err) {
+    console.error('[Debug] categories query failed:', err);
+    return res.status(500).json({ success: false, error: err.message, stack: err.stack });
+  }
+});
+
 app.post("/auth/google", async (req, res) => {
   console.log("Auth request received:", { 
     hasCredential: !!req.body?.credential,
