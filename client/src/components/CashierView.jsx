@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
-import GoogleTranslate from "./GoogleTranslate";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
@@ -11,16 +9,12 @@ const CashierView = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
-  const { user } = useAuth();
-  const displayName = user?.name || 'Demo Cashier';
-  const initials = displayName
-  .trim()
-  .split(' ')
-  .filter(word => word.length > 0)
-  .map(word => word[0])
-  .join('')
-  .toUpperCase();
 
+  // Customization State
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const [iceLevel, setIceLevel] = useState("Regular");
+  const [selectedToppings, setSelectedToppings] = useState([]);
 
   const categories = [
     { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
@@ -33,53 +27,100 @@ const CashierView = () => {
 
   const menuItems = {
     "Milk Tea": [
-      { id: 1, name: "Classic Milk Tea", description: "Traditional Black Tea with Milk", price: 4.5, icon: "☕", color: "#f472b6" },
-      { id: 2, name: "Taro Milk Tea", description: "Creamy Taro Flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
-      { id: 3, name: "Thai Milk Tea", description: "Spiced with Condensed Milk", price: 4.75, icon: "☕", color: "#fb923c" },
-      { id: 4, name: "Matcha Milk Tea", description: "Premium Matcha Blend", price: 5.5, icon: "🍃", color: "#4ade80" },
-      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich Brown Sugar Syrup", price: 6.0, icon: "☕", color: "#d97706" },
-      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido Milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
+      { id: 1, name: "Classic Milk Tea", description: "Traditional black tea with milk", price: 4.5, icon: "☕", color: "#f472b6" },
+      { id: 2, name: "Taro Milk Tea", description: "Creamy taro flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
+      { id: 3, name: "Thai Milk Tea", description: "Spiced with condensed milk", price: 4.75, icon: "☕", color: "#fb923c" },
+      { id: 4, name: "Matcha Milk Tea", description: "Premium matcha blend", price: 5.5, icon: "🍃", color: "#4ade80" },
+      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich brown sugar syrup", price: 6.0, icon: "☕", color: "#d97706" },
+      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
     ],
     "Fruit Tea": [
-      { id: 7, name: "Mango Tea", description: "Fresh Mango Flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
-      { id: 8, name: "Strawberry Tea", description: "Sweet Strawberry Blend", price: 5.0, icon: "🍓", color: "#f87171" },
-      { id: 9, name: "Passion Fruit Tea", description: "Tropical Passion Fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
-      { id: 10, name: "Lychee Tea", description: "Sweet Lychee Flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
+      { id: 7, name: "Mango Tea", description: "Fresh mango flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
+      { id: 8, name: "Strawberry Tea", description: "Sweet strawberry blend", price: 5.0, icon: "🍓", color: "#f87171" },
+      { id: 9, name: "Passion Fruit Tea", description: "Tropical passion fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
+      { id: 10, name: "Lychee Tea", description: "Sweet lychee flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
     ],
     Smoothies: [
-      { id: 11, name: "Berry Smoothie", description: "Mixed Berry Blend", price: 6.5, icon: "🫐", color: "#a855f7" },
-      { id: 12, name: "Mango Smoothie", description: "Tropical Mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
-      { id: 13, name: "Avocado Smoothie", description: "Creamy Avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
+      { id: 11, name: "Berry Smoothie", description: "Mixed berry blend", price: 6.5, icon: "🫐", color: "#a855f7" },
+      { id: 12, name: "Mango Smoothie", description: "Tropical mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
+      { id: 13, name: "Avocado Smoothie", description: "Creamy avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
     ],
     Coffee: [
-      { id: 14, name: "Espresso", description: "Strong Espresso Shot", price: 3.5, icon: "☕", color: "#92400e" },
-      { id: 15, name: "Latte", description: "Smooth Milk Coffee", price: 4.5, icon: "☕", color: "#d97706" },
-      { id: 16, name: "Cappuccino", description: "Foamy Cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
+      { id: 14, name: "Espresso", description: "Strong espresso shot", price: 3.5, icon: "☕", color: "#92400e" },
+      { id: 15, name: "Latte", description: "Smooth milk coffee", price: 4.5, icon: "☕", color: "#d97706" },
+      { id: 16, name: "Cappuccino", description: "Foamy cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
     ],
     Toppings: [
-      { id: 17, name: "Boba Pearls", description: "Classic Tapioca Pearls", price: 0.75, icon: "⚫", color: "#374151" },
-      { id: 18, name: "Pudding", description: "Creamy Egg Pudding", price: 1.0, icon: "🍮", color: "#fde047" },
-      { id: 19, name: "Aloe Vera", description: "Fresh Aloe Vera", price: 0.75, icon: "🌿", color: "#22c55e" },
-      { id: 20, name: "Jelly", description: "Fruit Jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
+      { id: 17, name: "Boba Pearls", description: "Classic tapioca pearls", price: 0.75, icon: "⚫", color: "#374151" },
+      { id: 18, name: "Pudding", description: "Creamy egg pudding", price: 1.0, icon: "🍮", color: "#fde047" },
+      { id: 19, name: "Aloe Vera", description: "Fresh aloe vera", price: 0.75, icon: "🌿", color: "#22c55e" },
+      { id: 20, name: "Jelly", description: "Fruit jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
     ],
     Snacks: [
-      { id: 21, name: "Popcorn Chicken", description: "Crispy Chicken Bites", price: 5.5, icon: "🍗", color: "#f97316" },
-      { id: 22, name: "Spring Rolls", description: "Crispy Spring Rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
-      { id: 23, name: "Fries", description: "Golden French Fries", price: 3.5, icon: "🍟", color: "#eab308" },
+      { id: 21, name: "Popcorn Chicken", description: "Crispy chicken bites", price: 5.5, icon: "🍗", color: "#f97316" },
+      { id: 22, name: "Spring Rolls", description: "Crispy spring rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
+      { id: 23, name: "Fries", description: "Golden french fries", price: 3.5, icon: "🍟", color: "#eab308" },
     ],
   };
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.id === item.id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
+  const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
+  const iceOptions = ["No Ice", "Less Ice", "Regular", "Extra Ice", "Hot"];
+
+  // Helper to determine if an item is a drink based on which category list it belongs to
+  const isDrinkItem = (item) => {
+    const drinkCategories = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee"];
+    return Object.keys(menuItems).some(cat => 
+      drinkCategories.includes(cat) && menuItems[cat].some(i => i.id === item.id)
+    );
+  };
+
+  const handleItemClick = (item) => {
+    if (isDrinkItem(item)) {
+      setCustomizingItem(item);
+      setSugarLevel("100%");
+      setIceLevel("Regular");
+      setSelectedToppings([]);
     } else {
-      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+      addToCart(item);
     }
+  };
+
+  const toggleTopping = (topping) => {
+    if (selectedToppings.find(t => t.id === topping.id)) {
+      setSelectedToppings(selectedToppings.filter(t => t.id !== topping.id));
+    } else {
+      setSelectedToppings([...selectedToppings, topping]);
+    }
+  };
+
+  const addToCart = (item, customizations = null) => {
+    // Calculate price including toppings
+    let finalPrice = item.price;
+    if (customizations && customizations.toppings) {
+      finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
+    }
+
+    const itemToAdd = {
+      ...item,
+      price: finalPrice,
+      customizations: customizations
+    };
+
+    // Check for existing item with IDENTICAL customizations
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.id === item.id && 
+      JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+    );
+
+    if (existingItemIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingItemIndex].quantity += 1;
+      setCart(newCart);
+    } else {
+      setCart([...cart, { ...itemToAdd, cartId: Date.now(), quantity: 1 }]);
+    }
+
+    setCustomizingItem(null);
   };
 
   const removeFromCart = (cartId) => {
@@ -119,11 +160,11 @@ const CashierView = () => {
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
-    text: "#6d499c",
-    textMuted: "#8f79e8",
-    border: "#6d499c",
+    text: "#ffeb3b",
+    textMuted: "#fdd835",
+    border: "#ffeb3b",
     hover: "#333333",
-    accent: "#6d499c",
+    accent: "#ffeb3b",
   } : {
     bg: darkMode ? "#0f172a" : "#f8fafc",
     card: darkMode ? "#1e293b" : "#ffffff",
@@ -135,7 +176,7 @@ const CashierView = () => {
   };
 
   return (
-    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
       {/* Header */}
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
@@ -157,8 +198,8 @@ const CashierView = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store - Terminal #1</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Bubble POS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store</p>
               </div>
             </div>
 
@@ -184,16 +225,6 @@ const CashierView = () => {
                 Voice Order
               </button>
 
-              {/* Google Translate */}
-              <div style={{
-                padding: "0.25rem",
-                borderRadius: "10px",
-                border: `1px solid ${theme.border}`,
-                backgroundColor: theme.card
-              }}>
-                <GoogleTranslate />
-              </div>
-
               {/* Font Size Toggle */}
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
@@ -212,7 +243,7 @@ const CashierView = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
               </button>
 
               {/* Dark Mode Toggle */}
@@ -248,7 +279,7 @@ const CashierView = () => {
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
                   borderRadius: "10px",
                   border: `1px solid ${theme.border}`,
-                  backgroundColor: highContrast ? "#6d499c" : theme.card,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
                   color: highContrast ? "#000" : theme.text,
                   cursor: "pointer",
                   display: "flex",
@@ -263,7 +294,7 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{displayName}</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
                   <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
@@ -278,7 +309,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                {initials}
+                  MC
                 </div>
               </div>
             </div>
@@ -293,7 +324,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Categories
+                CATEGORIES
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
@@ -371,7 +402,7 @@ const CashierView = () => {
               {filteredItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => addToCart(item)}
+                  onClick={() => handleItemClick(item)}
                   style={{
                     backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
                     border: `2px solid ${theme.border}`,
@@ -481,7 +512,7 @@ const CashierView = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>Your cart is empty!</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -498,7 +529,15 @@ const CashierView = () => {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
-                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                          {item.customizations && (
+                            <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
+                              <div>Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              {item.customizations.toppings.length > 0 && (
+                                <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>${item.price.toFixed(2)}</div>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
@@ -666,6 +705,182 @@ const CashierView = () => {
           </div>
         </div>
       </div>
+
+      {/* Customization Modal */}
+      {customizingItem && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 50
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "600px",
+            maxHeight: "90vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem.icon}</div>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                    {customizingItem.name}
+                  </h3>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${customizingItem.price.toFixed(2)}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCustomizingItem(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
+              {/* Sugar Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Sugar Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {sugarOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setSugarLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: sugarLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: sugarLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: sugarLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: sugarLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ice Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {iceOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setIceLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: iceLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: iceLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: iceLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: iceLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toppings */}
+              <div>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Toppings</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
+                  {menuItems["Toppings"].map((topping) => {
+                    const isSelected = selectedToppings.some(t => t.id === topping.id);
+                    return (
+                      <button
+                        key={topping.id}
+                        onClick={() => toggleTopping(topping)}
+                        style={{
+                          padding: "0.75rem",
+                          borderRadius: "8px",
+                          border: isSelected ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                          backgroundColor: isSelected ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                          color: theme.text,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span>{topping.icon}</span>
+                          <span>{topping.name}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
+                          {isSelected && <Check size={16} color="#3b82f6" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: "1.5rem",
+              borderTop: `1px solid ${theme.border}`,
+              backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
+            }}>
+              <button
+                onClick={() => addToCart(customizingItem, { sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.125rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                }}
+              >
+                Add to Order - ${(customizingItem.price + selectedToppings.reduce((sum, t) => sum + t.price, 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
