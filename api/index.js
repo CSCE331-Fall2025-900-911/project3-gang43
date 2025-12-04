@@ -4,9 +4,87 @@
 import express from "express";
 import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
-import productsRouter from "../server/src/routes/products.js";
-import ordersRouter from "../server/src/routes/orders.js";
-import pool from "../server/src/config/db.js";
+import pkg from 'pg';
+
+// Inline database pool creation to avoid import path issues
+const { Pool } = pkg;
+
+let pool = null;
+const GLOBAL_POOL_KEY = '__PG_POOL_INSTANCE__';
+
+try {
+  console.log('[API Init] Initializing database pool');
+  
+  // Check for cached pool first
+  if (globalThis && globalThis[GLOBAL_POOL_KEY]) {
+    pool = globalThis[GLOBAL_POOL_KEY];
+    console.log('[API Init] Using cached pool from globalThis');
+  } else {
+    const required = ['DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT', 'DB_NAME'];
+    const missing = required.filter(k => !process.env[k]);
+    
+    if (missing.length > 0) {
+      console.warn('[API Init] Missing DB env vars:', missing.join(', '));
+      // Create stub
+      pool = {
+        query: async () => {
+          throw new Error(`Database not configured. Missing: ${missing.join(', ')}`);
+        },
+        connect: async () => { throw new Error(`Database not configured. Missing: ${missing.join(', ')}`); },
+        end: async () => {},
+      };
+    } else {
+      const poolConfig = {
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT, 10),
+        database: process.env.DB_NAME,
+        max: process.env.VERCEL ? (Number(process.env.DB_POOL_MAX) || 1) : 10,
+      };
+      
+      pool = new Pool(poolConfig);
+      pool.on('error', (err) => console.error('[DB] Pool error:', err && err.message ? err.message : err));
+      
+      // Cache it
+      try {
+        if (globalThis) globalThis[GLOBAL_POOL_KEY] = pool;
+      } catch (e) {
+        console.warn('[API Init] Could not cache pool');
+      }
+      
+      console.log('[API Init] Pool created successfully');
+    }
+  }
+} catch (err) {
+  console.error('[API Init] Pool creation failed:', err && err.message ? err.message : err);
+  // Fallback stub
+  pool = {
+    query: async () => { throw new Error('Database initialization failed'); },
+    connect: async () => { throw new Error('Database initialization failed'); },
+    end: async () => {},
+  };
+}
+
+// Import routers
+let productsRouter = null;
+let ordersRouter = null;
+
+try {
+  const { default: products } = await import("../server/src/routes/products.js");
+  productsRouter = products;
+  console.log('[API Init] Products router imported');
+} catch (err) {
+  console.error('[API Init] Failed to import products router:', err && err.message ? err.message : err);
+}
+
+try {
+  const { default: orders } = await import("../server/src/routes/orders.js");
+  ordersRouter = orders;
+  console.log('[API Init] Orders router imported');
+} catch (err) {
+  console.error('[API Init] Failed to import orders router:', err && err.message ? err.message : err);
+}
 
 const app = express();
 
