@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle } from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 
@@ -86,6 +86,30 @@ const CashierView = () => {
 
     fetchData();
   }, []);
+
+  // --- Customization state (added to support item customization modal) ---
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const sugarOptions = ["0%", "25%", "50%", "75%", "100%"];
+  const [sugarLevel, setSugarLevel] = useState(sugarOptions[2]);
+  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice"];
+  const [iceLevel, setIceLevel] = useState(iceOptions[2]);
+  const [selectedToppings, setSelectedToppings] = useState([]);
+
+  // Minimal toppings list for customization UI when not provided by upstream code
+  const menuItems = {
+    Toppings: [
+      { id: 1, name: 'Boba', icon: '⚫', price: 0.5 },
+      { id: 2, name: 'Pudding', icon: '🍮', price: 0.75 },
+      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 }
+    ]
+  };
+
+  const toggleTopping = (topping) => {
+    setSelectedToppings(prev => {
+      if (prev.some(t => t.id === topping.id)) return prev.filter(t => t.id !== topping.id);
+      return [...prev, topping];
+    });
+  };
 
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
@@ -840,13 +864,13 @@ const CashierView = () => {
               justifyContent: "space-between",
               alignItems: "center"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ fontSize: "2.5rem" }}>{customizingItem.icon}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem?.icon}</div>
                 <div>
                   <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
-                    {customizingItem.name}
+                    {customizingItem?.name}
                   </h3>
-                  <p style={{ color: theme.textMuted, margin: 0 }}>${customizingItem.price.toFixed(2)}</p>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
                 </div>
               </div>
               <button
@@ -942,7 +966,7 @@ const CashierView = () => {
                           <span>{topping.name}</span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${Number(topping.price).toFixed(2)}</span>
                           {isSelected && <Check size={16} color="#3b82f6" />}
                         </div>
                       </button>
@@ -976,7 +1000,7 @@ const CashierView = () => {
                   boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
                 }}
               >
-                Add to Order - ${(customizingItem.price + selectedToppings.reduce((sum, t) => sum + t.price, 0)).toFixed(2)}
+                Add to Order - ${(Number(customizingItem?.price || 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
               </button>
             </div>
           </div>
