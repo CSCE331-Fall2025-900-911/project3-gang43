@@ -718,7 +718,7 @@ const CashierView = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 50
+          zIndex: 10000 // Increased z-index to ensure it sits on top of other fixed elements
         }}>
           <div style={{
             backgroundColor: theme.card,
