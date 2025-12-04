@@ -5,8 +5,8 @@ import express from "express";
 import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
 import pkg from 'pg';
-import productsRouter from "../server/src/routes/products.js";
-import ordersRouter from "../server/src/routes/orders.js";
+import createProductsRouter from "../server/src/routes/products.js";
+import createOrdersRouter from "../server/src/routes/orders.js";
 
 // Inline database pool creation
 const { Pool } = pkg;
@@ -114,11 +114,14 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Mount routers
+// Mount routers with pool dependency injection
 try {
-  if (productsRouter) app.use('/products', productsRouter);
-  if (ordersRouter) app.use('/orders', ordersRouter);
-  console.log('[Express] Routers mounted');
+  const productsRouter = createProductsRouter(pool);
+  const ordersRouter = createOrdersRouter(pool);
+
+  app.use('/products', productsRouter);
+  app.use('/orders', ordersRouter);
+  console.log('[Express] Routers mounted with pool');
 } catch (e) {
   console.error('[Express] Failed to mount routers:', e && e.message ? e.message : e);
 }

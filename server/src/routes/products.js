@@ -1,7 +1,8 @@
 import express from 'express';
-import pool from '../config/db.js';
 
-const router = express.Router();
+// Export a factory function that accepts a pool instance
+export default function createProductsRouter(pool) {
+  const router = express.Router();
 
 // GET unique categories (must be before /:category route)
 router.get('/categories/list', async (req, res) => {
@@ -100,4 +101,5 @@ router.get('/:category', async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}

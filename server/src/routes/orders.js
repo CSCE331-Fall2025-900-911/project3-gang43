@@ -1,7 +1,8 @@
 import express from 'express';
-import pool from '../config/db.js';
 
-const router = express.Router();
+// Export a factory function that accepts a pool instance
+export default function createOrdersRouter(pool) {
+  const router = express.Router();
 
 // POST - Create an order and decrement inventory
 router.post('/checkout', async (req, res) => {
@@ -206,4 +207,5 @@ router.get('/:orderId', async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}
