@@ -157,6 +157,25 @@ try {
   console.error('[Express] Failed to mount routers:', e);
 }
 
+// Log DB environment presence and pool status for startup debugging
+try {
+  const required = ['DB_USER','DB_PASSWORD','DB_HOST','DB_PORT','DB_NAME'];
+  const missing = required.filter(k => !process.env[k]);
+  console.log('[Startup] Vercel env present:', !!process.env.VERCEL);
+  console.log('[Startup] Missing DB env vars:', missing);
+  try {
+    console.log('[Startup] pool.query exists:', typeof pool?.query === 'function');
+    if (pool && typeof pool.query === 'function') {
+      // do not await here to avoid startup latency, just log config if possible
+      console.log('[Startup] pool ready (query function detected)');
+    }
+  } catch (e) {
+    console.error('[Startup] Error inspecting pool:', e && e.message ? e.message : e);
+  }
+} catch (e) {
+  console.error('[Startup] Error logging startup info:', e && e.message ? e.message : e);
+}
+
 // Catch-all error handler
 app.use((err, req, res, next) => {
   console.error("Express error:", err);
