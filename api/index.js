@@ -66,25 +66,12 @@ try {
   };
 }
 
-// Import routers
+// Import routers - comment out for now since we're testing without them
 let productsRouter = null;
 let ordersRouter = null;
 
-try {
-  const { default: products } = await import("../server/src/routes/products.js");
-  productsRouter = products;
-  console.log('[API Init] Products router imported');
-} catch (err) {
-  console.error('[API Init] Failed to import products router:', err && err.message ? err.message : err);
-}
-
-try {
-  const { default: orders } = await import("../server/src/routes/orders.js");
-  ordersRouter = orders;
-  console.log('[API Init] Orders router imported');
-} catch (err) {
-  console.error('[API Init] Failed to import orders router:', err && err.message ? err.message : err);
-}
+// Router imports commented out due to top-level await limitations
+// We'll load them inside the handler or via lazy loading if needed
 
 const app = express();
 
