@@ -12,6 +12,15 @@ const CashierView = () => {
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
   const { user } = useAuth();
+  const displayName = user?.name || 'Demo Cashier';
+  const initials = displayName
+  .trim()
+  .split(' ')
+  .filter(word => word.length > 0)
+  .map(word => word[0])
+  .join('')
+  .toUpperCase();
+
 
   const categories = [
     { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
@@ -254,7 +263,7 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Demo Cashier'}</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{displayName}</div>
                   <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
@@ -269,7 +278,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                DC
+                {initials}
                 </div>
               </div>
             </div>
