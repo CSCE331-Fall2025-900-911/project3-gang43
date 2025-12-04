@@ -1,10 +1,14 @@
 // Vercel serverless handler for the Boba POS API
 // Build: 20251203-01
 
+import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
 import pkg from 'pg';
+
+// Load environment variables from .env file (for local development)
+dotenv.config();
 import createProductsRouter from "../server/src/routes/products.js";
 import createOrdersRouter from "../server/src/routes/orders.js";
 
