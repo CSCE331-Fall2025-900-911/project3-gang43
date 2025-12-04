@@ -12,24 +12,25 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  Users, 
-  UtensilsCrossed, 
-  Settings, 
-  Search, 
-  Bell, 
-  TrendingUp, 
-  DollarSign, 
-  ShoppingBag, 
-  ClipboardList, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Users,
+  UtensilsCrossed,
+  Settings,
+  Search,
+  Bell,
+  TrendingUp,
+  DollarSign,
+  ShoppingBag,
+  ClipboardList,
   Smile,
   AlertCircle,
   AlertTriangle,
   Menu
 } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
 
 // Register ChartJS components
 ChartJS.register(
@@ -45,6 +46,7 @@ ChartJS.register(
 );
 
 const ManagerDashboard = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Analytics");
 
   // Mock Data matching the screenshot
@@ -213,14 +215,14 @@ const ManagerDashboard = () => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "1rem", background: "rgba(0,0,0,0.1)", borderRadius: "12px" }}>
-          <img 
-            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mark" 
-            alt="Manager" 
+          <img
+            src={user?.picture || "https://api.dicebear.com/7.x/avataaars/svg?seed=Manager"}
+            alt="Manager"
             style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#fff" }}
           />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>Demo Manager</div>
-            <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>Store Manager</div>
+            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>{user?.name || 'Manager'}</div>
+            <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>{user?.role || 'Manager'}</div>
           </div>
         </div>
       </div>

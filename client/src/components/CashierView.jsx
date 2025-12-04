@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext';
 
 const CashierView = () => {
+  const { user } = useAuth();
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Milk Tea");
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
@@ -294,8 +296,8 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Cashier'}</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{user?.role || 'Cashier'}</div>
                 </div>
                 <div style={{
                   width: `${40 * fontMultiplier}px`,
