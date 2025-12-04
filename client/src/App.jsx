@@ -5,6 +5,7 @@ import Login from './components/Login';
 import CashierView from './components/CashierView';
 import CustomerKiosk from './components/CustomerKiosk';
 import ManagerDashboard from './components/ManagerDashboard';
+import GoogleTranslate from './components/GoogleTranslate';
 import { LogOut } from 'lucide-react';
 import './App.css';
 
@@ -20,6 +21,20 @@ function AppContent() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{
+        position: 'fixed',
+        top: '1rem',
+        right: '1rem',
+        zIndex: 1001,
+        background: '#ffffff',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        padding: '0.75rem',
+        border: '1px solid #e2e8f0'
+      }}>
+        <GoogleTranslate />
+      </div>
+
       {/* View Selector - Modern styled navigation */}
       <div style={{
         position: 'fixed',
@@ -118,7 +133,6 @@ function AppContent() {
         </button>
       </div>
 
-      {/* Render Current View */}
       <div style={{ paddingTop: '5rem' }}>
         {currentView === 'cashier' && <CashierView />}
         {currentView === 'kiosk' && <CustomerKiosk />}
