@@ -3,12 +3,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
-import React, { useState } from "react";
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
-import { useAuth } from '../contexts/AuthContext';
+
 
 const CashierView = () => {
-  const { user } = useAuth();
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
