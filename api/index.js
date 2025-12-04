@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
+import productsRouter from "../server/src/routes/products.js";
+import ordersRouter from "../server/src/routes/orders.js";
 
 // Initialize Express app
 const app = express();
@@ -133,6 +135,15 @@ app.post("/auth/google", async (req, res) => {
 app.get("/user/profile", (req, res) => {
   res.json({ message: "Protected route accessed" });
 });
+
+// Mount products and orders routers so /api/products and /api/orders work on Vercel
+try {
+  app.use('/products', productsRouter);
+  app.use('/orders', ordersRouter);
+  console.log('[Express] Mounted products and orders routers');
+} catch (e) {
+  console.error('[Express] Failed to mount routers:', e);
+}
 
 // Catch-all error handler
 app.use((err, req, res, next) => {
