@@ -6,9 +6,14 @@ import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
 
 // Import routers and database connection
-import productsRouter from "../server/src/routes/products.js";
-import ordersRouter from "../server/src/routes/orders.js";
-import pool from "../server/src/config/db.js";
+// Temporarily comment these out to test
+// import productsRouter from "../server/src/routes/products.js";
+// import ordersRouter from "../server/src/routes/orders.js";
+// import pool from "../server/src/config/db.js";
+
+let productsRouter = null;
+let ordersRouter = null;
+let pool = null;
 
 // Create Express app for handling routes
 const app = express();
