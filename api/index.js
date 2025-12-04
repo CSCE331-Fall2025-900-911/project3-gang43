@@ -1,4 +1,5 @@
 // Vercel serverless handler for the Boba POS API
+// Build: 20251203-01
 
 import express from "express";
 import cors from "cors";
