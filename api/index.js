@@ -5,8 +5,8 @@ import express from "express";
 import cors from "cors";
 import { OAuth2Client } from "google-auth-library";
 import pkg from 'pg';
-import productsRouter from "../server/src/routes/products.js";
-import ordersRouter from "../server/src/routes/orders.js";
+// import productsRouter from "../server/src/routes/products.js";
+// import ordersRouter from "../server/src/routes/orders.js";
 
 // Inline database pool creation
 const { Pool } = pkg;
@@ -62,6 +62,8 @@ try {
 }
 
 const app = express();
+
+const corsOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
@@ -113,12 +115,13 @@ app.get('/health', async (req, res) => {
 });
 
 // Mount routers
-try {
-  if (productsRouter) app.use('/products', productsRouter);
-  if (ordersRouter) app.use('/orders', ordersRouter);
-} catch (e) {
-  console.error('[Express] Failed to mount routers:', e && e.message ? e.message : e);
-}
+// Routers temporarily disabled for testing
+// try {
+//   if (productsRouter) app.use('/products', productsRouter);
+//   if (ordersRouter) app.use('/orders', ordersRouter);
+// } catch (e) {
+//   console.error('[Express] Failed to mount routers:', e && e.message ? e.message : e);
+// }
 
 // Auth
 let client;
