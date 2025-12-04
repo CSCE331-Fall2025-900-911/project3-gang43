@@ -222,31 +222,31 @@ app.use((req, res) => {
 
 // Export handler for Vercel serverless - properly handle async
 export default async function handler(req, res) {
-  console.log(`[Vercel] API handler invoked: ${req.method} ${req.url}`);
-
-  // Normalize URL when Vercel rewrites send the original path as /api/...
-  // Some Vercel rewrites pass the original path so req.url may start with /api.
-  // Strip leading /api so Express routes (which are defined without /api) match.
   try {
-    if (req.url && req.url.startsWith('/api')) {
-      const original = req.url;
-      // remove only the first /api prefix
-      req.url = req.url.replace(/^\/api/, '') || '/';
-      console.log(`[Vercel] Normalized req.url from ${original} to ${req.url}`);
+    console.log(`[Vercel] API handler invoked: ${req.method} ${req.url}`);
+
+    // Normalize URL when Vercel rewrites send the original path as /api/...
+    // Some Vercel rewrites pass the original path so req.url may start with /api.
+    // Strip leading /api so Express routes (which are defined without /api) match.
+    try {
+      if (req.url && req.url.startsWith('/api')) {
+        const original = req.url;
+        // remove only the first /api prefix
+        req.url = req.url.replace(/^\/api/, '') || '/';
+        console.log(`[Vercel] Normalized req.url from ${original} to ${req.url}`);
+      }
+    } catch (e) {
+      console.error('Error normalizing req.url', e);
     }
-  } catch (e) {
-    console.error('Error normalizing req.url', e);
-  }
-  // Set CORS headers manually for OPTIONS requests
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(200).end();
-  }
+    // Set CORS headers manually for OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', corsOrigins.join(','));
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      return res.status(200).end();
+    }
 
-  try {
     // Let Express handle the request
     return await new Promise((resolve, reject) => {
       app(req, res, (err) => {
@@ -258,11 +258,16 @@ export default async function handler(req, res) {
       });
     });
   } catch (error) {
-    console.error("Handler error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message
-    });
+    console.error("[Vercel Handler] Outer catch - error:", error && error.message ? error.message : error);
+    try {
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error && error.message ? error.message : String(error)
+      });
+    } catch (e2) {
+      console.error("[Vercel Handler] Failed to send error response:", e2);
+      return res.status(500).send("Internal server error");
+    }
   }
 }
