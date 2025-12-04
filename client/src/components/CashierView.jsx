@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2 } from "lucide-react";
-import { getTranslation } from "../utils/translations";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
@@ -8,19 +7,22 @@ const CashierView = () => {
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [language, setLanguage] = useState("en");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
 
-  const t = (key) => getTranslation(key, language);
+  // Customization State
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const [iceLevel, setIceLevel] = useState("Regular");
+  const [selectedToppings, setSelectedToppings] = useState([]);
 
   const categories = [
-    { name: t("milkTea"), icon: "🧋", color: "#ec4899", key: "Milk Tea" },
-    { name: t("fruitTea"), icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
-    { name: t("smoothies"), icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
-    { name: t("coffee"), icon: "☕", color: "#78350f", key: "Coffee" },
-    { name: t("toppings"), icon: "⭐", color: "#14b8a6", key: "Toppings" },
-    { name: t("snacks"), icon: "🍪", color: "#ef4444", key: "Snacks" },
+    { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
+    { name: "Fruit Tea", icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
+    { name: "Smoothies", icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
+    { name: "Coffee", icon: "☕", color: "#78350f", key: "Coffee" },
+    { name: "Toppings", icon: "⭐", color: "#14b8a6", key: "Toppings" },
+    { name: "Snacks", icon: "🍪", color: "#ef4444", key: "Snacks" },
   ];
 
   const menuItems = {
@@ -61,17 +63,64 @@ const CashierView = () => {
     ],
   };
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.id === item.id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
+  const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
+  const iceOptions = ["No Ice", "Less Ice", "Regular", "Extra Ice", "Hot"];
+
+  // Helper to determine if an item is a drink based on which category list it belongs to
+  const isDrinkItem = (item) => {
+    const drinkCategories = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee"];
+    return Object.keys(menuItems).some(cat => 
+      drinkCategories.includes(cat) && menuItems[cat].some(i => i.id === item.id)
+    );
+  };
+
+  const handleItemClick = (item) => {
+    if (isDrinkItem(item)) {
+      setCustomizingItem(item);
+      setSugarLevel("100%");
+      setIceLevel("Regular");
+      setSelectedToppings([]);
     } else {
-      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+      addToCart(item);
     }
+  };
+
+  const toggleTopping = (topping) => {
+    if (selectedToppings.find(t => t.id === topping.id)) {
+      setSelectedToppings(selectedToppings.filter(t => t.id !== topping.id));
+    } else {
+      setSelectedToppings([...selectedToppings, topping]);
+    }
+  };
+
+  const addToCart = (item, customizations = null) => {
+    // Calculate price including toppings
+    let finalPrice = item.price;
+    if (customizations && customizations.toppings) {
+      finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
+    }
+
+    const itemToAdd = {
+      ...item,
+      price: finalPrice,
+      customizations: customizations
+    };
+
+    // Check for existing item with IDENTICAL customizations
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.id === item.id && 
+      JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+    );
+
+    if (existingItemIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingItemIndex].quantity += 1;
+      setCart(newCart);
+    } else {
+      setCart([...cart, { ...itemToAdd, cartId: Date.now(), quantity: 1 }]);
+    }
+
+    setCustomizingItem(null);
   };
 
   const removeFromCart = (cartId) => {
@@ -127,7 +176,7 @@ const CashierView = () => {
   };
 
   return (
-    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
       {/* Header */}
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
@@ -149,8 +198,8 @@ const CashierView = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("bubblePOS")}</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>{t("downtownStore")}</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Bubble POS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store</p>
               </div>
             </div>
 
@@ -173,28 +222,7 @@ const CashierView = () => {
                 }}
               >
                 <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {t("voiceOrder")}
-              </button>
-
-              {/* Language Toggle */}
-              <button
-                onClick={() => setLanguage(language === "en" ? "es" : "en")}
-                style={{
-                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: `1px solid ${theme.border}`,
-                  backgroundColor: theme.card,
-                  color: theme.text,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: "500",
-                  fontSize: `${0.875 * fontMultiplier}rem`
-                }}
-              >
-                <Globe style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {language === "en" ? "EN" : "ES"}
+                Voice Order
               </button>
 
               {/* Font Size Toggle */}
@@ -267,7 +295,7 @@ const CashierView = () => {
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{t("cashier")}</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
                   width: `${40 * fontMultiplier}px`,
@@ -296,7 +324,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {t("categories")}
+                CATEGORIES
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
@@ -345,7 +373,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
               <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
-                {categories.find(c => c.key === selectedCategory)?.name || t("allItems")}
+                {categories.find(c => c.key === selectedCategory)?.name || "All Items"}
               </h2>
 
               {/* Search Bar */}
@@ -353,7 +381,7 @@ const CashierView = () => {
                 <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                 <input
                   type="text"
-                  placeholder={t("searchItems")}
+                  placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -374,7 +402,7 @@ const CashierView = () => {
               {filteredItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => addToCart(item)}
+                  onClick={() => handleItemClick(item)}
                   style={{
                     backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
                     border: `2px solid ${theme.border}`,
@@ -436,7 +464,7 @@ const CashierView = () => {
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>{t("currentOrder")}</h2>
+              <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
               {cart.length > 0 && (
                 <button
                   onClick={clearCart}
@@ -465,7 +493,7 @@ const CashierView = () => {
               border: `1px solid ${highContrast ? theme.accent : (darkMode ? "#1e40af" : "#bfdbfe")}`
             }}>
               <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, fontWeight: "600", color: highContrast ? theme.accent : (darkMode ? "#93c5fd" : "#1e40af") }}>
-                {t("order")} #{orderNumber}
+                Order #{orderNumber}
               </div>
             </div>
 
@@ -484,7 +512,7 @@ const CashierView = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>{t("noItems")}</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -501,7 +529,15 @@ const CashierView = () => {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
-                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                          {item.customizations && (
+                            <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
+                              <div>Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              {item.customizations.toppings.length > 0 && (
+                                <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>${item.price.toFixed(2)}</div>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
@@ -585,11 +621,11 @@ const CashierView = () => {
               <>
                 <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("subtotal")}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>{t("tax")} (8.5%)</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
                   </div>
                   <div style={{
@@ -598,7 +634,7 @@ const CashierView = () => {
                     paddingTop: "0.75rem",
                     borderTop: `1px solid ${theme.border}`
                   }}>
-                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>{t("total")}</span>
+                    <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
                     <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getTotal().toFixed(2)}</span>
                   </div>
                 </div>
@@ -635,7 +671,7 @@ const CashierView = () => {
                   }}
                 >
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
-                  {t("processPayment")}
+                  Process Payment
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
@@ -649,7 +685,7 @@ const CashierView = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("hold")}
+                    Hold
                   </button>
                   <button style={{
                     padding: `${0.625 * fontMultiplier}rem`,
@@ -661,7 +697,7 @@ const CashierView = () => {
                     fontWeight: "500",
                     cursor: "pointer"
                   }}>
-                    {t("void")}
+                    Void
                   </button>
                 </div>
               </>
@@ -669,6 +705,182 @@ const CashierView = () => {
           </div>
         </div>
       </div>
+
+      {/* Customization Modal */}
+      {customizingItem && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 50
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "600px",
+            maxHeight: "90vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem.icon}</div>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                    {customizingItem.name}
+                  </h3>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${customizingItem.price.toFixed(2)}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCustomizingItem(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
+              {/* Sugar Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Sugar Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {sugarOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setSugarLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: sugarLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: sugarLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: sugarLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: sugarLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ice Level */}
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {iceOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setIceLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: iceLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: iceLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: iceLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: iceLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toppings */}
+              <div>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Toppings</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
+                  {menuItems["Toppings"].map((topping) => {
+                    const isSelected = selectedToppings.some(t => t.id === topping.id);
+                    return (
+                      <button
+                        key={topping.id}
+                        onClick={() => toggleTopping(topping)}
+                        style={{
+                          padding: "0.75rem",
+                          borderRadius: "8px",
+                          border: isSelected ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                          backgroundColor: isSelected ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                          color: theme.text,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span>{topping.icon}</span>
+                          <span>{topping.name}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
+                          {isSelected && <Check size={16} color="#3b82f6" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: "1.5rem",
+              borderTop: `1px solid ${theme.border}`,
+              backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
+            }}>
+              <button
+                onClick={() => addToCart(customizingItem, { sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.125rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                }}
+              >
+                Add to Order - ${(customizingItem.price + selectedToppings.reduce((sum, t) => sum + t.price, 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
