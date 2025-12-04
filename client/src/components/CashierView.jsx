@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle } from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 
@@ -85,6 +85,30 @@ const CashierView = () => {
 
     fetchData();
   }, []);
+
+  // --- Customization state (added to support item customization modal) ---
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const sugarOptions = ["0%", "25%", "50%", "75%", "100%"];
+  const [sugarLevel, setSugarLevel] = useState(sugarOptions[2]);
+  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice"];
+  const [iceLevel, setIceLevel] = useState(iceOptions[2]);
+  const [selectedToppings, setSelectedToppings] = useState([]);
+
+  // Minimal toppings list for customization UI when not provided by upstream code
+  const menuItems = {
+    Toppings: [
+      { id: 1, name: 'Boba', icon: '⚫', price: 0.5 },
+      { id: 2, name: 'Pudding', icon: '🍮', price: 0.75 },
+      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 }
+    ]
+  };
+
+  const toggleTopping = (topping) => {
+    setSelectedToppings(prev => {
+      if (prev.some(t => t.id === topping.id)) return prev.filter(t => t.id !== topping.id);
+      return [...prev, topping];
+    });
+  };
 
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
