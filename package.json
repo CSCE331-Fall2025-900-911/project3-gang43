@@ -8,6 +8,14 @@
     "api": "npm run dev --prefix api",
     "dev": "concurrently -n API,SERVER,CLIENT -c cyan,green,magenta \"npm run api\" \"npm run server\" \"npm run client\""
   },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "google-auth-library": "^10.5.0",
+    "pg": "^8.16.3"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
