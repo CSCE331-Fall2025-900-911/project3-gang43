@@ -1,5 +1,8 @@
+
 // Vercel serverless handler for the Boba POS API
 // Build: 20251203-01
+
+console.log('[API] index.js loaded');
 
 import dotenv from "dotenv";
 import express from "express";
@@ -173,8 +176,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: "Internal server error" });
 });
 
+// Export the Express app for local development (dev.js) while keeping the
+// default export as the Vercel handler for deployment.
+export { app };
 // Local development
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+if (
+  process.env.NODE_ENV !== 'production' &&
+  !process.env.VERCEL &&
+  import.meta.url === `file://${process.argv[1]}`
+) {
+  console.log('[API] About to start local dev server');
   const PORT = process.env.PORT || 5050;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }

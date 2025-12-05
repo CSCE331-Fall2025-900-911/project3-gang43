@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon dev.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -11,5 +12,8 @@
     "express": "^5.1.0",
     "google-auth-library": "^10.5.0",
     "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }

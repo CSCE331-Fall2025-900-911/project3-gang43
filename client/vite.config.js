@@ -7,7 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5050',
+        // Proxy API calls to the API dev server (5052) to avoid colliding
+        // with the main server process which uses 5050.
+        target: 'http://localhost:5052',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '') || '/'
       }
