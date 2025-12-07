@@ -1,7 +1,4 @@
 
-// Vercel serverless handler for the Boba POS API
-// Build: 20251203-01
-
 console.log('[API] index.js loaded');
 
 import dotenv from "dotenv";
@@ -12,8 +9,8 @@ import pkg from 'pg';
 
 // Load environment variables from .env file (for local development)
 dotenv.config();
-import createProductsRouter from "../server/src/routes/products.js";
-import createOrdersRouter from "../server/src/routes/orders.js";
+import createProductsRouter from "./routes/products.js";
+import createOrdersRouter from "./routes/orders.js";
 
 // Inline database pool creation
 const { Pool } = pkg;
