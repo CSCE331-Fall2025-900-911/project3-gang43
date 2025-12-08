@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -28,9 +28,10 @@ import {
   Smile,
   AlertCircle,
   AlertTriangle,
-  Menu
+  Menu,
 } from "lucide-react";
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
 
 // Register ChartJS components
 ChartJS.register(
@@ -48,55 +49,167 @@ ChartJS.register(
 const ManagerDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Analytics");
+  const [products, setProducts] = useState([]);
+  const [orderHistory, setOrderHistory] = useState([]);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reorderItem, setReorderItem] = useState(null);
+  const [newQuantity, setNewQuantity] = useState("");
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [weeklyRevenue, setWeeklyRevenue] = useState([]);
+  const [topItems, setTopItems] = useState([]);
 
-  // Mock Data matching the screenshot
+  const openReorderModal = (item) => {
+    setReorderItem(item);
+    setIsModalOpen(true);
+  };
+
+  const closeReorderModal = () => {
+    setIsModalOpen(false);
+    setReorderItem(null);
+    setNewQuantity("");
+  };
+
+  const [dashboardStats, setDashboardStats] = useState({
+    todayRevenue: 0,
+    revenueChange: 0,
+    totalOrders: 0,
+    ordersChange: 0,
+    itemsSold: 0,
+    itemsSoldChange: 0,
+  });
+
+  const handleReorder = async () => {
+    try {
+      const response = await axios.post("/api/products/inventory/reorder", {
+        inventoryId: reorderItem.inventory_id,
+        newQuantity: parseFloat(newQuantity),
+      });
+
+      if (response.data.success) {
+        setInventoryData(
+          inventoryData.map((item) =>
+            item.inventory_id === reorderItem.inventory_id
+              ? { ...response.data.data }
+              : item
+          )
+        );
+        closeReorderModal();
+        alert("Reorder successful!");
+      }
+    } catch (error) {
+      console.error("Error reordering inventory:", error);
+      alert("Failed to reorder. Please try again.");
+    }
+  };
+
+  // Initialize stats with default values
   const stats = [
-    { 
-      title: "Today's Revenue", 
-      value: "$2,847", 
-      delta: "+12.5% from yesterday", 
-      isPositive: true, 
-      icon: DollarSign, 
-      color: "#10b981", 
-      bg: "#d1fae5" 
+    {
+      title: "Today's Revenue",
+      value: `$${parseFloat(dashboardStats.todayRevenue).toFixed(2)}`,
+      delta: `${dashboardStats.revenueChange.toFixed(1)}% from yesterday`,
+      isPositive: dashboardStats.revenueChange >= 0,
+      icon: DollarSign,
+      bg: "#dbeafe",
+      color: "#2563eb",
     },
-    { 
-      title: "Orders Completed", 
-      value: "184", 
-      delta: "+8.2% from yesterday", 
-      isPositive: true, 
-      icon: ShoppingCart, 
-      color: "#3b82f6", 
-      bg: "#dbeafe" 
+    {
+      title: "Total Orders",
+      value: dashboardStats.totalOrders.toString(),
+      delta: `${dashboardStats.ordersChange.toFixed(1)}% from yesterday`,
+      isPositive: dashboardStats.ordersChange >= 0,
+      icon: ShoppingBag,
+      bg: "#dcfce7",
+      color: "#16a34a",
     },
-    { 
-      title: "Average Order", 
-      value: "$15.47", 
-      delta: "+3.1% from yesterday", 
-      isPositive: true, 
-      icon: ClipboardList, 
-      color: "#8b5cf6", 
-      bg: "#ede9fe" 
+    {
+      title: "Items Sold",
+      value: dashboardStats.itemsSold.toString(),
+      delta: `${dashboardStats.itemsSoldChange.toFixed(1)}% from yesterday`,
+      isPositive: dashboardStats.itemsSoldChange >= 0,
+      icon: ShoppingCart,
+      bg: "#fef3c7",
+      color: "#d97706",
     },
-    { 
-      title: "Customer Satisfaction", 
-      value: "4.8", 
-      subtext: "Based on 127 reviews", 
-      icon: Smile, 
-      color: "#f59e0b", 
-      bg: "#fef3c7" 
+    {
+      title: "Customer Satisfaction",
+      value: "4.8",
+      subtext: "⭐ Based on 45 reviews",
+      icon: Smile,
+      bg: "#ede9fe",
+      color: "#7c3aed",
     },
   ];
 
-  const inventoryAlerts = [
-    { id: 1, name: "Tapioca Pearls", status: "Only 2 bags remaining", type: "critical" },
-    { id: 2, name: "Green Tea Powder", status: "Running low - 5 units left", type: "warning" },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
 
-  const recentOrders = [
-    { id: "#1847", item: "Taro Milk Tea + Tapioca", amount: "$6.50", status: "Completed", statusColor: "#d1fae5", statusText: "#065f46" },
-    { id: "#1846", item: "Mango Green Tea + Jelly", amount: "$5.75", status: "Preparing", statusColor: "#fef3c7", statusText: "#92400e" },
-  ];
+        const [
+          productsRes,
+          ordersHistoryRes,
+          inventoryRes,
+          statsRes,
+          recentOrdersRes,
+          weeklyRevenueRes,
+          topItemsRes,
+        ] = await Promise.all([
+          axios.get("/api/products"),
+          axios.get("/api/orders/history"),
+          axios.get("/api/products/inventory/alerts"),
+          axios.get("/api/products/dashboard/stats"),
+          axios.get("/api/products/orders/recent"),
+          axios.get("/api/products/revenue/last7days"),
+          axios.get("/api/products/orders/top-items/last7days"),
+        ]);
+
+        console.log("Products data:", productsRes.data);
+        console.log("Orders history:", ordersHistoryRes.data);
+        console.log("Inventory data:", inventoryRes.data);
+        console.log("Dashboard stats:", statsRes.data);
+        console.log("Recent orders:", recentOrdersRes.data);
+
+        setProducts(productsRes.data.data || []);
+        setOrderHistory(ordersHistoryRes.data.data || []);
+        setInventoryData(inventoryRes.data.data || []);
+        setDashboardStats(statsRes.data.data);
+        setRecentOrders(recentOrdersRes.data.data || []);
+        setWeeklyRevenue(weeklyRevenueRes.data.data || []);
+        setTopItems(topItemsRes.data.data || []);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const getLowStockItems = () => {
+    const lowStockItems = inventoryData.filter((item) => {
+      const quantity = parseFloat(item.quantity);
+      const reorderLevel = parseFloat(item.reorder_level);
+
+      // Check if quantity is a valid number and if it's less than or equal to reorder level
+      // If reorder_level is not present, consider the item as low stock
+      const isLowStock =
+        !isNaN(quantity) && (isNaN(reorderLevel) || quantity <= reorderLevel);
+
+      console.log(
+        `Item: ${item.item_name}, Quantity: ${quantity}, Reorder Level: ${reorderLevel}, Is Low Stock: ${isLowStock}`
+      );
+
+      return isLowStock;
+    });
+
+    console.log("Low stock items:", lowStockItems);
+    return lowStockItems;
+  };
 
   // Chart Configuration
   const chartOptions = {
@@ -105,30 +218,30 @@ const ManagerDashboard = () => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#1e293b',
+        backgroundColor: "#1e293b",
         padding: 12,
         cornerRadius: 8,
-      }
+      },
     },
     scales: {
-      x: { 
+      x: {
         grid: { display: false },
-        ticks: { color: '#64748b', font: { size: 11 } }
+        ticks: { color: "#64748b", font: { size: 11 } },
       },
-      y: { 
-        grid: { color: '#f1f5f9', borderDash: [4, 4] },
-        ticks: { color: '#64748b', font: { size: 11 } },
-        beginAtZero: true
+      y: {
+        grid: { color: "#f1f5f9", borderDash: [4, 4] },
+        ticks: { color: "#64748b", font: { size: 11 } },
+        beginAtZero: true,
       },
     },
   };
 
   const lineData = {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    labels: weeklyRevenue.map((item) => item.day),
     datasets: [
       {
         label: "Revenue",
-        data: [2100, 2300, 2150, 2500, 2800, 3200, 2850],
+        data: weeklyRevenue.map((item) => Number(item.revenue)),
         borderColor: "#6366f1",
         backgroundColor: "rgba(99, 102, 241, 0.1)",
         tension: 0.4,
@@ -142,11 +255,11 @@ const ManagerDashboard = () => {
   };
 
   const barData = {
-    labels: ["Taro Milk", "Brown Sugar", "Mango Green", "Thai Tea", "Matcha"],
+    labels: topItems.map((item) => item.product_name),
     datasets: [
       {
         label: "Orders",
-        data: [45, 38, 32, 28, 25],
+        data: topItems.map((item) => Number(item.total_sold)),
         backgroundColor: "#8b5cf6",
         borderRadius: 6,
         barThickness: 24,
@@ -159,34 +272,79 @@ const ManagerDashboard = () => {
     { name: "Orders", icon: ShoppingCart },
     { name: "Inventory", icon: Package },
     { name: "Staff", icon: Users },
-    { name: "Menu", icon: UtensilsCrossed },
-    { name: "Settings", icon: Settings },
   ];
 
+  // Loading state
+  if (loading && !stats.length) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          fontSize: "1.25rem",
+          color: "#64748b",
+        }}
+      >
+        Loading dashboard...
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "calc(100vh - 5rem)", backgroundColor: "#f8fafc" }}>
-      
-      {/* Sidebar - Matches the purple gradient in screenshot */}
-      <div style={{ 
-        background: "linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%)", 
-        color: "white",
-        padding: "1.5rem",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between"
-      }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "260px 1fr",
+        minHeight: "calc(100vh - 5rem)",
+        backgroundColor: "#f8fafc",
+      }}
+    >
+      {/* Sidebar */}
+      <div
+        style={{
+          background: "linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%)",
+          color: "white",
+          padding: "1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2.5rem" }}>
-            <div style={{ background: "rgba(255,255,255,0.2)", padding: "0.5rem", borderRadius: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              marginBottom: "2.5rem",
+            }}
+          >
+            <div
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                padding: "0.5rem",
+                borderRadius: "8px",
+              }}
+            >
               <LayoutDashboard size={24} color="white" />
             </div>
             <div>
-              <h1 style={{ fontSize: "1.25rem", fontWeight: "bold", margin: 0 }}>BubblePOS</h1>
-              <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>Manager Dashboard</span>
+              <h1
+                style={{ fontSize: "1.25rem", fontWeight: "bold", margin: 0 }}
+              >
+                BubblePOS
+              </h1>
+              <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>
+                Manager Dashboard
+              </span>
             </div>
           </div>
 
-          <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <nav
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
             {sidebarItems.map((item) => (
               <button
                 key={item.name}
@@ -198,90 +356,227 @@ const ManagerDashboard = () => {
                   padding: "0.75rem 1rem",
                   borderRadius: "12px",
                   border: "none",
-                  background: activeTab === item.name ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                  background:
+                    activeTab === item.name
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   color: "white",
                   cursor: "pointer",
                   textAlign: "left",
                   fontSize: "0.9375rem",
                   fontWeight: activeTab === item.name ? "600" : "500",
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
                 }}
               >
-                <item.icon size={20} style={{ opacity: activeTab === item.name ? 1 : 0.7 }} />
+                <item.icon
+                  size={20}
+                  style={{ opacity: activeTab === item.name ? 1 : 0.7 }}
+                />
                 {item.name}
               </button>
             ))}
           </nav>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "1rem", background: "rgba(0,0,0,0.1)", borderRadius: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "1rem",
+            background: "rgba(0,0,0,0.1)",
+            borderRadius: "12px",
+          }}
+        >
           <img
-            src={user?.picture || "https://api.dicebear.com/7.x/avataaars/svg?seed=Manager"}
+            src={
+              user?.picture ||
+              "https://api.dicebear.com/7.x/avataaars/svg?seed=Manager"
+            }
             alt="Manager"
-            style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#fff" }}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "#fff",
+            }}
           />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>{user?.name || 'Manager'}</div>
-            <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>{user?.role || 'Manager'}</div>
+            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>
+              {user?.name || "Manager"}
+            </div>
+            <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>
+              {user?.role || "Manager"}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       <div style={{ padding: "2rem", overflowY: "auto" }}>
-        
         {/* Top Header */}
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "2rem",
+          }}
+        >
           <div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Dashboard Overview</h2>
-            <p style={{ color: "#64748b", margin: "0.25rem 0 0" }}>Welcome back, Manager! Here's what's happening at your store today.</p>
+            <h2
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: "bold",
+                color: "#0f172a",
+                margin: 0,
+              }}
+            >
+              Dashboard Overview
+            </h2>
+            <p style={{ color: "#64748b", margin: "0.25rem 0 0" }}>
+              Welcome back, {user?.name || "Manager"}! Here's what's happening
+              at your store today.
+            </p>
           </div>
-          
+
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <div style={{ position: "relative" }}>
-              <Search size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                style={{ 
-                  padding: "0.625rem 1rem 0.625rem 2.5rem", 
-                  borderRadius: "10px", 
-                  border: "1px solid #e2e8f0", 
+              <Search
+                size={18}
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#94a3b8",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search..."
+                style={{
+                  padding: "0.625rem 1rem 0.625rem 2.5rem",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
                   outline: "none",
                   width: "240px",
                   fontSize: "0.875rem",
-                  backgroundColor: "#ffffff", /* <--- Changed to white */
-                  color: "#0f172a",           /* <--- Ensure text is dark/readable */
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)" /* Optional: Adds subtle depth to match cards */
-                }} 
+                  backgroundColor: "#ffffff",
+                  color: "#0f172a",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                }}
               />
             </div>
-            <button style={{ position: "relative", padding: "0.625rem", borderRadius: "10px", border: "1px solid #e2e8f0", background: "white", cursor: "pointer" }}>
+            <button
+              style={{
+                position: "relative",
+                padding: "0.625rem",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                background: "white",
+                cursor: "pointer",
+              }}
+            >
               <Bell size={20} color="#64748b" />
-              <span style={{ position: "absolute", top: "-2px", right: "-2px", width: "8px", height: "8px", background: "#ef4444", borderRadius: "50%" }}></span>
+              <span
+                style={{
+                  position: "absolute",
+                  top: "-2px",
+                  right: "-2px",
+                  width: "8px",
+                  height: "8px",
+                  background: "#ef4444",
+                  borderRadius: "50%",
+                }}
+              ></span>
             </button>
           </div>
         </header>
 
         {/* Stats Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.5rem", marginBottom: "2rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "1.5rem",
+            marginBottom: "2rem",
+          }}
+        >
           {stats.map((stat, index) => (
-            <div key={index} style={{ background: "white", padding: "1.5rem", borderRadius: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1rem" }}>
+            <div
+              key={index}
+              style={{
+                background: "white",
+                padding: "1.5rem",
+                borderRadius: "16px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                  marginBottom: "1rem",
+                }}
+              >
                 <div>
-                  <h3 style={{ fontSize: "0.875rem", fontWeight: "600", color: "#64748b", margin: 0 }}>{stat.title}</h3>
-                  <div style={{ fontSize: "1.875rem", fontWeight: "bold", color: "#0f172a", marginTop: "0.5rem" }}>{stat.value}</div>
+                  <h3
+                    style={{
+                      fontSize: "0.875rem",
+                      fontWeight: "600",
+                      color: "#64748b",
+                      margin: 0,
+                    }}
+                  >
+                    {stat.title}
+                  </h3>
+                  <div
+                    style={{
+                      fontSize: "1.875rem",
+                      fontWeight: "bold",
+                      color: "#0f172a",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {stat.value}
+                  </div>
                 </div>
-                <div style={{ background: stat.bg, padding: "0.75rem", borderRadius: "12px" }}>
+                <div
+                  style={{
+                    background: stat.bg,
+                    padding: "0.75rem",
+                    borderRadius: "12px",
+                  }}
+                >
                   <stat.icon size={24} color={stat.color} />
                 </div>
               </div>
               {stat.subtext ? (
-                 <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: "#f59e0b", fontWeight: "600" }}>
-                   {stat.subtext}
-                 </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    fontSize: "0.875rem",
+                    color: "#f59e0b",
+                    fontWeight: "600",
+                  }}
+                >
+                  {stat.subtext}
+                </div>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.875rem", color: stat.isPositive ? "#10b981" : "#ef4444", fontWeight: "600" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    fontSize: "0.875rem",
+                    color: stat.isPositive ? "#10b981" : "#ef4444",
+                    fontWeight: "600",
+                  }}
+                >
                   <TrendingUp size={16} />
                   {stat.delta}
                 </div>
@@ -291,58 +586,164 @@ const ManagerDashboard = () => {
         </div>
 
         {/* Charts Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.5fr 1fr",
+            gap: "1.5rem",
+            marginBottom: "2rem",
+          }}
+        >
           {/* Line Chart */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Sales Trend (Last 7 Days)</h3>
-                <Menu size={20} color="#94a3b8" style={{ cursor: "pointer" }} />
-             </div>
-             <div style={{ height: "250px" }}>
-                <Line data={lineData} options={chartOptions} />
-             </div>
+          <div
+            style={{
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.125rem",
+                  fontWeight: "bold",
+                  color: "#0f172a",
+                  margin: 0,
+                }}
+              >
+                Sales Trend (Last 7 Days)
+              </h3>
+              <Menu size={20} color="#94a3b8" style={{ cursor: "pointer" }} />
+            </div>
+            <div style={{ height: "250px" }}>
+              <Line data={lineData} options={chartOptions} />
+            </div>
           </div>
 
           {/* Bar Chart */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Popular Items</h3>
-                <Menu size={20} color="#94a3b8" style={{ cursor: "pointer" }} />
-             </div>
-             <div style={{ height: "250px" }}>
-                <Bar data={barData} options={chartOptions} />
-             </div>
+          <div
+            style={{
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.125rem",
+                  fontWeight: "bold",
+                  color: "#0f172a",
+                  margin: 0,
+                }}
+              >
+                Popular Items
+              </h3>
+              <Menu size={20} color="#94a3b8" style={{ cursor: "pointer" }} />
+            </div>
+            <div style={{ height: "250px" }}>
+              <Bar data={barData} options={chartOptions} />
+            </div>
           </div>
         </div>
 
         {/* Bottom Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1.5rem" }}>
-          
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.5fr 1fr",
+            gap: "1.5rem",
+          }}
+        >
           {/* Recent Orders Table */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h3 style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#0f172a", marginBottom: "1.25rem" }}>Recent Orders</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div
+            style={{
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "bold",
+                color: "#0f172a",
+                marginBottom: "1.25rem",
+              }}
+            >
+              Recent Orders
+            </h3>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
               {recentOrders.map((order) => (
-                <div key={order.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#f8fafc", borderRadius: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <div style={{ background: "#e0e7ff", padding: "0.5rem", borderRadius: "50%" }}>
-                       <Users size={20} color="#6366f1" />
+                <div
+                  key={order.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.75rem",
+                    background: "#f8fafc",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: "#e0e7ff",
+                        padding: "0.5rem",
+                        borderRadius: "50%",
+                      }}
+                    >
+                      <Users size={20} color="#6366f1" />
                     </div>
                     <div>
-                      <div style={{ fontWeight: "600", color: "#0f172a" }}>Order {order.id}</div>
-                      <div style={{ fontSize: "0.875rem", color: "#64748b" }}>{order.item}</div>
+                      <div style={{ fontWeight: "600", color: "#0f172a" }}>
+                        Order {order.id}
+                      </div>
+                      <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
+                        {order.item}
+                      </div>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: "bold", color: "#0f172a" }}>{order.amount}</div>
-                    <span style={{ 
-                      fontSize: "0.75rem", 
-                      fontWeight: "600", 
-                      padding: "0.25rem 0.75rem", 
-                      borderRadius: "100px", 
-                      background: order.statusColor, 
-                      color: order.statusText 
-                    }}>
+                    <div style={{ fontWeight: "bold", color: "#0f172a" }}>
+                      {order.amount}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: "600",
+                        padding: "0.25rem 0.75rem",
+                        borderRadius: "100px",
+                        background: order.statusColor,
+                        color: order.statusText,
+                      }}
+                    >
                       {order.status}
                     </span>
                   </div>
@@ -352,43 +753,183 @@ const ManagerDashboard = () => {
           </div>
 
           {/* Inventory Alerts */}
-          <div style={{ background: "white", padding: "1.5rem", borderRadius: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <h3 style={{ fontSize: "1.125rem", fontWeight: "bold", color: "#0f172a", marginBottom: "1.25rem" }}>Inventory Alerts</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {inventoryAlerts.map((alert) => (
-                <div key={alert.id} style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "space-between", 
-                  padding: "1rem", 
-                  borderRadius: "12px",
-                  background: alert.type === "critical" ? "#fef2f2" : "#fefce8",
-                  border: `1px solid ${alert.type === "critical" ? "#fee2e2" : "#fef9c3"}`
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    {alert.type === "critical" ? <AlertCircle color="#ef4444" /> : <AlertTriangle color="#eab308" />}
-                    <div>
-                      <div style={{ fontWeight: "600", color: "#0f172a" }}>{alert.name}</div>
-                      <div style={{ fontSize: "0.875rem", color: alert.type === "critical" ? "#ef4444" : "#b45309" }}>{alert.status}</div>
+          <div
+            style={{
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: "bold",
+                color: "#0f172a",
+                marginBottom: "1.25rem",
+              }}
+            >
+              Inventory Alerts
+            </h3>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
+              {getLowStockItems().length > 0 ? (
+                getLowStockItems().map((item) => (
+                  <div
+                    key={item.inventory_id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "1rem",
+                      borderRadius: "12px",
+                      background:
+                        parseFloat(item.quantity) <= 0 ? "#fee2e2" : "#fef3c7",
+                      border:
+                        parseFloat(item.quantity) <= 0
+                          ? "1px solid #fecaca"
+                          : "1px solid #fde68a",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      {parseFloat(item.quantity) <= 0 ? (
+                        <AlertCircle color="#dc2626" />
+                      ) : (
+                        <AlertTriangle color="#d97706" />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: "600", color: "#0f172a" }}>
+                          {item.item_name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "0.875rem",
+                            color:
+                              parseFloat(item.quantity) <= 0
+                                ? "#dc2626"
+                                : "#d97706",
+                          }}
+                        >
+                          {parseFloat(item.quantity) <= 0
+                            ? `Out of stock: ${Math.abs(
+                                parseFloat(item.quantity)
+                              )} ${item.unit} needed`
+                            : `Only ${item.quantity} ${item.unit} remaining`}
+                        </div>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => openReorderModal(item)}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        borderRadius: "8px",
+                        border: "none",
+                        background:
+                          parseFloat(item.quantity) <= 0
+                            ? "#dc2626"
+                            : "#d97706",
+                        color: "white",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      Reorder
+                    </button>
                   </div>
-                  <button style={{ 
-                    padding: "0.5rem 1rem", 
-                    borderRadius: "8px", 
-                    border: "none", 
-                    background: alert.type === "critical" ? "#ef4444" : "#eab308", 
-                    color: "white", 
-                    fontWeight: "600", 
-                    cursor: "pointer",
-                    fontSize: "0.875rem"
-                  }}>
-                    Reorder
-                  </button>
+                ))
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "#64748b",
+                    padding: "2rem",
+                  }}
+                >
+                  No low stock items at the moment.
                 </div>
-              ))}
+              )}
             </div>
           </div>
-
+          {isModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "2rem",
+                  borderRadius: "8px",
+                  width: "300px",
+                }}
+              >
+                <h4>Reorder {reorderItem?.item_name}</h4>
+                <p>
+                  Current quantity: {reorderItem?.quantity} {reorderItem?.unit}
+                </p>
+                <input
+                  type="number"
+                  value={newQuantity}
+                  onChange={(e) => setNewQuantity(e.target.value)}
+                  placeholder="Enter new quantity"
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    marginBottom: "1rem",
+                    borderRadius: "4px",
+                    border: "1px solid #ccc",
+                  }}
+                />
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <button
+                    onClick={closeReorderModal}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "4px",
+                      border: "none",
+                      background: "#e2e8f0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReorder}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "4px",
+                      border: "none",
+                      background: "#3b82f6",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Confirm Reorder
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
