@@ -15,7 +15,6 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 function AppContent() {
   const { user, logout } = useAuth();
   const [selectedView, setSelectedView] = useState(null);
-  const [currentView, setCurrentView] = useState('cashier');
 
   // Show view selector first if no view is selected
   if (!selectedView) {
@@ -27,12 +26,14 @@ function AppContent() {
     return <Login />;
   }
 
-  // Set the current view to the selected view after authentication
-  React.useEffect(() => {
-    if (selectedView && user) {
-      setCurrentView(selectedView);
-    }
-  }, [selectedView, user]);
+  // User is authenticated and view is selected, show the selected view
+  const currentView = selectedView;
+
+  // Function to handle view change
+  const handleChangeView = () => {
+    setSelectedView(null);
+    logout();
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -66,64 +67,6 @@ function AppContent() {
         border: '1px solid #e2e8f0'
       }}>
         <button
-          onClick={() => setCurrentView('kiosk')}
-          style={{
-            padding: '0.625rem 1.25rem',
-            borderRadius: '12px',
-            border: 'none',
-            fontWeight: '600',
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: currentView === 'kiosk'
-              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-              : 'transparent',
-            color: currentView === 'kiosk' ? 'white' : '#64748b',
-            boxShadow: currentView === 'kiosk' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
-          }}
-        >
-          Customer Kiosk
-        </button>
-        <button
-          onClick={() => setCurrentView('cashier')}
-          style={{
-            padding: '0.625rem 1.25rem',
-            borderRadius: '12px',
-            border: 'none',
-            fontWeight: '600',
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: currentView === 'cashier'
-              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-              : 'transparent',
-            color: currentView === 'cashier' ? 'white' : '#64748b',
-            boxShadow: currentView === 'cashier' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
-          }}
-        >
-          Cashier View
-        </button>
-        <button
-          onClick={() => setCurrentView('manager')}
-          style={{
-            padding: '0.625rem 1.25rem',
-            borderRadius: '12px',
-            border: 'none',
-            fontWeight: '600',
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: currentView === 'manager'
-              ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-              : 'transparent',
-            color: currentView === 'manager' ? 'white' : '#64748b',
-            boxShadow: currentView === 'manager' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
-          }}
-        >
-          Manager Dashboard
-        </button>
-        <div style={{ width: '1px', background: '#e2e8f0', margin: '0.25rem 0' }} />
-        <button
           onClick={logout}
           style={{
             padding: '0.625rem 1rem',
@@ -148,10 +91,7 @@ function AppContent() {
         </button>
         <div style={{ width: '1px', background: '#e2e8f0', margin: '0.25rem 0' }} />
         <button
-          onClick={() => {
-            setSelectedView(null);
-            logout();
-          }}
+          onClick={handleChangeView}
           style={{
             padding: '0.625rem 1rem',
             borderRadius: '12px',
@@ -172,8 +112,8 @@ function AppContent() {
       </div>
 
       <div style={{ paddingTop: '5rem' }}>
-        {currentView === 'cashier' && <CashierView />}
         {currentView === 'kiosk' && <CustomerKiosk />}
+        {currentView === 'cashier' && <CashierView />}
         {currentView === 'manager' && <ManagerDashboard />}
       </div>
     </div>
