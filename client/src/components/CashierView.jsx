@@ -330,7 +330,7 @@ const CashierView = () => {
 
   const voiceControl = useVoiceControl({
     onCommand: handleVoiceCommand,
-    enabled: true
+    enabled: false
   });
 
   const theme = highContrast ? {

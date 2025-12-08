@@ -125,14 +125,22 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        setTranscript('');
+      } catch (err) {
+        console.log('Error stopping recognition:', err);
+      }
     }
   }, []);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
+      enabledRef.current = false;
       stopListening();
     } else {
+      enabledRef.current = true;
       startListening();
     }
   }, [isListening, startListening, stopListening]);
