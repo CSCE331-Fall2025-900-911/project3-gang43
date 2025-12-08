@@ -322,7 +322,7 @@ const CashierView = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
+                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
               </button>
 
               {/* Dark Mode Toggle */}
@@ -388,7 +388,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                  MC
+                    {initials}
                 </div>
               </div>
             </div>

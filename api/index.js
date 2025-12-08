@@ -157,7 +157,7 @@ app.post("/auth/google", async (req, res) => {
         email: payload.email,
         name: payload.name,
         picture: payload.picture,
-        role: "cashier",
+        role: "Cashier",
       },
     });
   } catch (error) {
