@@ -119,7 +119,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Weather API endpoint
-app.get("/api/weather", async (req, res) => {
+app.get("/weather", async (req, res) => {
   try {
     const { city, lat, lon } = req.query;
     const apiKey = process.env.OPENWEATHER_API_KEY;
