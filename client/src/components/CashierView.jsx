@@ -163,10 +163,9 @@ const CashierView = () => {
   };
 
   const updateQuantity = (cartId, delta) => {
-    setCart(cart.map(item => {
+    setCart(prevCart => prevCart.map(item => {
       if (item.cartId === cartId) {
-        const newQuantity = item.quantity + delta;
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        return { ...item, quantity: item.quantity + delta };
       }
       return item;
     }).filter(item => item.quantity > 0));
