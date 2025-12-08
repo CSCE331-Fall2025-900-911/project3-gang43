@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
+import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
+import WeatherWidget from "./WeatherWidget";
 
 
 const CashierView = () => {
@@ -20,6 +22,15 @@ const CashierView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
+  
+  // Weather discount hook
+  const {
+    discountPercent,
+    discountMessage,
+    loading: weatherLoading,
+    error: weatherError,
+    fetchWeatherByLocation
+  } = useWeatherDiscount('College Station');
   
   const { user } = useAuth();
   const displayName = user?.name || 'Demo Cashier';
@@ -144,8 +155,17 @@ const CashierView = () => {
   const clearCart = () => setCart([]);
 
   const getSubtotal = () => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
-  const getTax = () => getSubtotal() * 0.085;
-  const getTotal = () => getSubtotal() + getTax();
+  const getDiscountAmount = () => {
+    const subtotal = getSubtotal();
+    return subtotal * discountPercent / 100;
+  };
+  const getDiscountedSubtotal = () => {
+    const subtotal = getSubtotal();
+    const discount = getDiscountAmount();
+    return subtotal - discount;
+  };
+  const getTax = () => getDiscountedSubtotal() * 0.085;
+  const getTotal = () => getDiscountedSubtotal() + getTax();
 
   // Filter products by selected category
   const currentItems = selectedCategory 
@@ -188,7 +208,11 @@ const CashierView = () => {
 
       console.log('[Checkout] Preparing checkout with:');
       console.log('[Checkout] - Items:', cartItems);
-      console.log('[Checkout] - Subtotal:', getSubtotal());
+      console.log('[Checkout] - Original Subtotal:', getSubtotal());
+      if (discountPercent > 0) {
+        console.log('[Checkout] - Weather Discount:', `${discountPercent}% (-$${getDiscountAmount().toFixed(2)})`);
+        console.log('[Checkout] - Discounted Subtotal:', getDiscountedSubtotal());
+      }
       console.log('[Checkout] - Tax:', getTax());
       console.log('[Checkout] - Total:', getTotal());
       console.log('[Checkout] - Cashier:', displayName);
@@ -396,6 +420,30 @@ const CashierView = () => {
         </div>
       </div>
 
+      {/* Weather Discount Banner */}
+      {discountPercent > 0 && !weatherLoading && (
+        <div style={{
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          padding: `${0.75 * fontMultiplier}rem ${1.5 * fontMultiplier}rem`,
+          borderRadius: '12px',
+          margin: `0 ${1.5 * fontMultiplier}rem`,
+          textAlign: 'center',
+          fontSize: `${0.875 * fontMultiplier}rem`,
+          fontWeight: '600',
+          boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)',
+          animation: 'fadeIn 0.5s ease-in-out'
+        }}>
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(-10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+          🎉 {discountMessage || `${discountPercent}% Weather Discount Active!`}
+        </div>
+      )}
+
       {/* Main Content */}
       <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
         {/* Left Sidebar - Categories */}
@@ -552,8 +600,14 @@ const CashierView = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Current Order */}
+        {/* Right Sidebar - Weather & Current Order */}
         <div>
+          {/* Weather Widget */}
+          <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
+            <WeatherWidget />
+          </div>
+
+          {/* Current Order */}
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
@@ -708,6 +762,26 @@ const CashierView = () => {
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
                   </div>
+
+                  {discountPercent > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                      <span style={{
+                        fontSize: `${0.875 * fontMultiplier}rem`,
+                        color: "#10b981",
+                        fontWeight: "600"
+                      }}>
+                        {discountMessage || `${discountPercent}% Weather Discount`}
+                      </span>
+                      <span style={{
+                        fontSize: `${0.875 * fontMultiplier}rem`,
+                        fontWeight: "600",
+                        color: "#10b981"
+                      }}>
+                        -${getDiscountAmount().toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
