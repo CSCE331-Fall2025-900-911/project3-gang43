@@ -1,24 +1,28 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Globe, ZoomIn, Eye, Trash2, X, Mic, ShoppingCart, CreditCard, Search, Plus, Minus, Sun, Moon, Volume2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from '../contexts/AuthContext';
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
-import useVoiceControl from "../hooks/useVoiceControl";
-import VoiceControlPanel from "./VoiceControlPanel";
+import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
 
+
 const CustomerKiosk = () => {
-  const [highContrast, setHighContrast] = useState(false);
-  const [fontSize, setFontSize] = useState("base");
   const [cart, setCart] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [menuItems, setMenuItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [commandFeedback, setCommandFeedback] = useState(null);
-
-  // Weather discount hook
+  const [fontSize, setFontSize] = useState("base");
+  const [highContrast, setHighContrast] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState(null);
+  const [inventoryWarnings, setInventoryWarnings] = useState([]);
+  
   const {
     discountPercent,
     discountMessage,
@@ -26,52 +30,128 @@ const CustomerKiosk = () => {
     error: weatherError,
     fetchWeatherByLocation
   } = useWeatherDiscount('College Station');
+  
+  const { user } = useAuth();
+  const displayName = user?.name || 'Demo Customer';
+  const initials = displayName
+  .trim()
+  .split(' ')
+  .filter(word => word.length > 0)
+  .map(word => word[0])
+  .join('')
+  .toUpperCase();
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const placeholderData = [
-          { product_id: 1, product_name: "Classic Milk Tea", size: "Traditional black tea with milk", price: 4.5, is_available: true, category: "milk-tea", image: "☕", color: "#f472b6" },
-          { product_id: 2, product_name: "Taro Milk Tea", size: "Creamy taro flavor", price: 5.25, is_available: true, category: "milk-tea", image: "🌱", color: "#c084fc" },
-          { product_id: 3, product_name: "Thai Milk Tea", size: "Spiced with condensed milk", price: 4.75, is_available: true, category: "milk-tea", image: "☕", color: "#fb923c" },
-          { product_id: 4, product_name: "Matcha Milk Tea", size: "Premium matcha blend", price: 5.5, is_available: true, category: "milk-tea", image: "🍃", color: "#4ade80" },
-          { product_id: 5, product_name: "Brown Sugar Milk Tea", size: "Rich brown sugar syrup", price: 6.0, is_available: true, category: "milk-tea", image: "☕", color: "#d97706" },
-          { product_id: 6, product_name: "Hokkaido Milk Tea", size: "Premium Hokkaido milk", price: 5.75, is_available: true, category: "milk-tea", image: "❄️", color: "#60a5fa" },
-          { product_id: 7, product_name: "Mango Tea", size: "Fresh mango flavor", price: 5.0, is_available: true, category: "fruit-tea", image: "🥭", color: "#fbbf24" },
-          { product_id: 8, product_name: "Strawberry Tea", size: "Sweet strawberry blend", price: 5.0, is_available: true, category: "fruit-tea", image: "🍓", color: "#f87171" },
-          { product_id: 9, product_name: "Lychee Tea", size: "Sweet lychee flavor", price: 5.0, is_available: true, category: "fruit-tea", image: "🍑", color: "#fda4af" },
-          { product_id: 10, product_name: "Passion Fruit Tea", size: "Tropical passion fruit", price: 5.25, is_available: true, category: "fruit-tea", image: "🍊", color: "#fb923c" },
-        ];
+        setLoading(true);
+        setError(null);
+        
+        const categoriesResponse = await getCategories();
+        const productsResponse = await getAllProducts();
 
-        setMenuItems(placeholderData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching products:", error);
+        if (categoriesResponse.success) {
+          setCategories(categoriesResponse.data);
+          if (categoriesResponse.data.length > 0) {
+            setSelectedCategory(categoriesResponse.data[0]);
+          }
+        }
+
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+      } catch (err) {
+        setError('Failed to load products. Please refresh the page.');
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const categories = [
-    { id: "all", name: "All Items", icon: "🌟", color: "#3b82f6" },
-    { id: "milk-tea", name: "Milk Tea", icon: "🧋", color: "#ec4899" },
-    { id: "fruit-tea", name: "Fruit Tea", icon: "🍹", color: "#f59e0b" },
-    { id: "specialty", name: "Specialty", icon: "🍵", color: "#8b5cf6" },
-  ];
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice", "Hot"];
+  const sizeOptions = ["Small", "Medium", "Large"];
+  const [drinkSize, setDrinkSize] = useState("Medium");
+  const [iceLevel, setIceLevel] = useState("Regular Ice");
+  const [selectedToppings, setSelectedToppings] = useState([]);
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.product_id === item.product_id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
+  const menuItems = {
+    Toppings: [
+      { id: 1, name: 'Boba', icon: '⚫', price: 0.5 },
+      { id: 2, name: 'Pudding', icon: '🍮', price: 0.75 },
+      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 },
+      { id: 4, name: 'Grass Jelly', icon: '⚫', price: 0.75 },
+      { id: 5, name: 'Lychee Jelly', icon: '⚪', price: 0.75 },
+      { id: 6, name: 'Cheese Foam', icon: '🧀', price: 1.25 }
+    ]
+  };
+
+  const isDrinkItem = (item) => {
+    const drinkKeywords = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee", "Tea", "Slush"];
+    return drinkKeywords.some(keyword => (item.category || "").includes(keyword));
+  };
+
+  const handleItemClick = (item) => {
+    if (isDrinkItem(item)) {
+      setCustomizingItem(item);
+      setSugarLevel("100%");
+      setIceLevel("Regular Ice");
+      setSelectedToppings([]);
+      setDrinkSize("Medium");
     } else {
-      setCart([...cart, { ...item, cartId: Date.now(), quantity: 1 }]);
+      addToCart(item);
     }
+  };
+
+  const toggleTopping = (topping) => {
+    setSelectedToppings(prev => {
+      if (prev.some(t => t.id === topping.id)) return prev.filter(t => t.id !== topping.id);
+      return [...prev, topping];
+    });
+  };
+
+  const addToCart = (item, customizations = null) => {
+    let finalPrice = Number(item.price);
+
+    if (customizations && customizations.size) {
+        if (customizations.size === "Small") {
+            finalPrice -= 0.50;   // Small: $0.50 less
+        } else if (customizations.size === "Large") {
+            finalPrice += 0.75;   // Large: $0.75 more
+        }
+    }
+
+
+    if (customizations && customizations.toppings) {
+      finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
+    }
+
+    const itemToAdd = {
+      ...item,
+      name: item.product_name || item.name,
+      price: finalPrice,
+      customizations: customizations,
+      quantity: 1
+    };
+
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.product_id === item.product_id && 
+      JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+    );
+
+    if (existingItemIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingItemIndex].quantity += 1;
+      setCart(newCart);
+    } else {
+      setCart([...cart, { ...itemToAdd, cartId: Date.now() }]);
+    }
+
+    setCustomizingItem(null);
   };
 
   const removeFromCart = (cartId) => {
@@ -88,22 +168,28 @@ const CustomerKiosk = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  const getTotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
-  const getDiscountAmount = () => {
-    const subtotal = parseFloat(getTotal());
-    return (subtotal * discountPercent / 100).toFixed(2);
-  };
-  const getDiscountedTotal = () => {
-    const subtotal = parseFloat(getTotal());
-    const discount = parseFloat(getDiscountAmount());
-    return (subtotal - discount).toFixed(2);
-  };
-  const getTax = () => (parseFloat(getDiscountedTotal()) * 0.085).toFixed(2);
-  const getGrandTotal = () => (parseFloat(getDiscountedTotal()) + parseFloat(getTax())).toFixed(2);
+  const clearCart = () => setCart([]);
 
-  const filteredItems = selectedCategory === "all"
-    ? menuItems.filter((item) => item.is_available && item.product_name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : menuItems.filter((item) => item.category === selectedCategory && item.is_available && item.product_name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const getSubtotal = () => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  const getDiscountAmount = () => {
+    const subtotal = getSubtotal();
+    return subtotal * discountPercent / 100;
+  };
+  const getDiscountedSubtotal = () => {
+    const subtotal = getSubtotal();
+    const discount = getDiscountAmount();
+    return subtotal - discount;
+  };
+  const getTax = () => getDiscountedSubtotal() * 0.085;
+  const getTotal = () => getDiscountedSubtotal() + getTax();
+
+  const currentItems = selectedCategory 
+    ? products.filter(item => item.category === selectedCategory)
+    : [];
+  
+  const filteredItems = currentItems.filter(item =>
+    item.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const getFontSizeMultiplier = () => {
     if (fontSize === "large") return 1.2;
@@ -113,174 +199,67 @@ const CustomerKiosk = () => {
 
   const fontMultiplier = getFontSizeMultiplier();
 
-  // Voice command handler
-  const handleVoiceCommand = useCallback((command) => {
-    const lowerCommand = command.toLowerCase().trim();
-
-    // Ignore very short commands that might be accidental
-    if (lowerCommand.length < 2) return;
-
-    // Add to cart commands
-    const addPatterns = [
-      /add (.*)/,
-      /i want (.*)/,
-      /order (.*)/,
-      /get me (.*)/,
-      /can i have (.*)/,
-      /^(.+)$/  // Fallback: try to match the entire command as an item name
-    ];
-
-    // Remove from cart commands
-    const removePatterns = [
-      /remove (.*)/,
-      /delete (.*)/,
-      /take out (.*)/
-    ];
-
-    // Navigation commands
-    if (lowerCommand.includes('show all') || lowerCommand.includes('all items')) {
-      setSelectedCategory('all');
-      setCommandFeedback({ success: true, message: 'Showing all items' });
-      setTimeout(() => setCommandFeedback(null), 2000);
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      setCheckoutMessage({ type: 'error', text: 'Cart is empty' });
       return;
     }
 
-    if (lowerCommand.includes('milk tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
-      setSelectedCategory('milk-tea');
-      setCommandFeedback({ success: true, message: 'Showing milk tea' });
-      setTimeout(() => setCommandFeedback(null), 2000);
-      return;
-    }
+    setIsProcessing(true);
+    setCheckoutMessage(null);
+    setInventoryWarnings([]);
 
-    if (lowerCommand.includes('fruit tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
-      setSelectedCategory('fruit-tea');
-      setCommandFeedback({ success: true, message: 'Showing fruit tea' });
-      setTimeout(() => setCommandFeedback(null), 2000);
-      return;
-    }
+    try {
+      const cartItems = cart.map(item => ({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        price: item.price,
+        notes: item.customizations ? 
+          `Size: ${item.customizations.size}, Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}` 
+          : ""
+      }));
 
-    if (lowerCommand.includes('clear cart')) {
-      setCart([]);
-      setCommandFeedback({ success: true, message: 'Cart cleared' });
-      setTimeout(() => setCommandFeedback(null), 2000);
-      return;
-    }
+      const response = await checkoutOrder(
+        cartItems,
+        getTotal(),
+        getSubtotal(),
+        getTax(),
+        displayName
+      );
 
-    if (lowerCommand.includes('checkout') || lowerCommand.includes('place order')) {
-      if (cart.length > 0) {
-        setCommandFeedback({ success: true, message: 'Ready to checkout!' });
-      } else {
-        setCommandFeedback({ success: false, message: 'Your cart is empty' });
-      }
-      setTimeout(() => setCommandFeedback(null), 2000);
-      return;
-    }
-
-    // Try to match add patterns
-    for (const pattern of addPatterns) {
-      const match = lowerCommand.match(pattern);
-      if (match) {
-        const itemName = match[1].trim();
-        
-        // Find best matching item using fuzzy matching
-        let bestMatch = null;
-        let bestScore = 0;
-
-        menuItems.forEach(m => {
-          const productNameLower = m.product_name.toLowerCase();
-          
-          // Exact word match gets highest score
-          if (productNameLower.includes(itemName)) {
-            const score = itemName.length / productNameLower.length;
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = m;
-            }
-          }
-          // Partial word match
-          else {
-            const words = productNameLower.split(' ');
-            for (const word of words) {
-              if (word.startsWith(itemName.substring(0, 3))) {
-                if (0.5 > bestScore) {
-                  bestScore = 0.5;
-                  bestMatch = m;
-                }
-              }
-            }
-          }
+      if (response.success) {
+        setInventoryWarnings(response.data.warnings || []);
+        setCheckoutMessage({
+          type: 'success',
+          text: `Order #${response.data.orderId} processed successfully!`,
         });
-
-        if (bestMatch) {
-          addToCart(bestMatch);
-          setCommandFeedback({
-            success: true,
-            message: `Added ${bestMatch.product_name} to cart`
-          });
-          setTimeout(() => setCommandFeedback(null), 2500);
-          return;
-        }
+        setCart([]);
+        setTimeout(() => setCheckoutMessage(null), 3000);
+      } else {
+        setCheckoutMessage({
+          type: 'error',
+          text: response.message || 'Failed to process order',
+        });
       }
+    } catch (error) {
+      setCheckoutMessage({
+        type: 'error',
+        text: 'Error processing order. Please try again.',
+      });
+    } finally {
+      setIsProcessing(false);
     }
+  };
 
-    // Try to match remove patterns
-    for (const pattern of removePatterns) {
-      const match = lowerCommand.match(pattern);
-      if (match) {
-        const itemName = match[1].trim();
-        const cartItem = cart.find(c =>
-          c.product_name.toLowerCase().includes(itemName) ||
-          itemName.includes(c.product_name.toLowerCase())
-        );
-
-        if (cartItem) {
-          removeFromCart(cartItem.cartId);
-          setCommandFeedback({
-            success: true,
-            message: `Removed ${cartItem.product_name} from cart`
-          });
-          setTimeout(() => setCommandFeedback(null), 2000);
-          return;
-        } else {
-          setCommandFeedback({
-            success: false,
-            message: `"${itemName}" not found in cart`
-          });
-          setTimeout(() => setCommandFeedback(null), 2000);
-          return;
-        }
-      }
-    }
-
-    // If no command matched but something was said, provide helpful feedback
-    setCommandFeedback({
-      success: false,
-      message: 'Try: "Add [drink name]" or "Show all"'
-    });
-    setTimeout(() => setCommandFeedback(null), 2500);
-  }, [menuItems, cart, addToCart, removeFromCart]);
-
-  // Voice control hook
-  const {
-    isListening,
-    transcript,
-    isSupported,
-    error,
-    toggleListening
-  } = useVoiceControl({
-    onCommand: handleVoiceCommand,
-    enabled: true
-  });
-
-  // Theme colors - using high contrast if enabled, otherwise dark/light mode
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
-    text: "#6d499c",
+    text: "#ffeb3b",
     textMuted: "#fdd835",
-    border: "#6d499c",
+    border: "#ffeb3b",
     hover: "#333333",
-    accent: "#6d499c",
+    accent: "#ffeb3b",
   } : {
     bg: darkMode ? "#0f172a" : "#f8fafc",
     card: darkMode ? "#1e293b" : "#ffffff",
@@ -292,8 +271,7 @@ const CustomerKiosk = () => {
   };
 
   return (
-    <div style={{ backgroundColor: theme.bg, minHeight: "100vh" }}>
-      {/* Header */}
+    <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -314,13 +292,12 @@ const CustomerKiosk = () => {
                 B
               </div>
               <div>
-                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>BubblePOS</h1>
-                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Customer Kiosk</p>
+                <h1 style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Bubble POS</h1>
+                <p style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted, margin: 0 }}>Downtown Store</p>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-              {/* Voice Order Button */}
               <button
                 style={{
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
@@ -341,17 +318,6 @@ const CustomerKiosk = () => {
                 Voice Order
               </button>
 
-              {/* Google Translate */}
-              <div style={{
-                padding: "0.25rem",
-                borderRadius: "10px",
-                border: `1px solid ${theme.border}`,
-                backgroundColor: theme.card
-              }}>
-                <GoogleTranslate />
-              </div>
-
-              {/* Font Size Toggle */}
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
                 style={{
@@ -369,10 +335,9 @@ const CustomerKiosk = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
+                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
               </button>
 
-              {/* Dark Mode Toggle */}
               <button
                 onClick={() => {
                   setDarkMode(!darkMode);
@@ -395,7 +360,6 @@ const CustomerKiosk = () => {
                 {darkMode ? <Sun style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} /> : <Moon style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />}
               </button>
 
-              {/* High Contrast Toggle */}
               <button
                 onClick={() => {
                   setHighContrast(!highContrast);
@@ -405,7 +369,7 @@ const CustomerKiosk = () => {
                   padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
                   borderRadius: "10px",
                   border: `1px solid ${theme.border}`,
-                  backgroundColor: highContrast ? "#6d499c" : theme.card,
+                  backgroundColor: highContrast ? "#ffeb3b" : theme.card,
                   color: highContrast ? "#000" : theme.text,
                   cursor: "pointer",
                   display: "flex",
@@ -417,12 +381,32 @@ const CustomerKiosk = () => {
               >
                 <Eye style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
               </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Customer'}</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{user?.role || 'Customer'}</div>
+                </div>
+                <div style={{
+                  width: `${40 * fontMultiplier}px`,
+                  height: `${40 * fontMultiplier}px`,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: "bold",
+                  border: "2px solid #3b82f6"
+                }}>
+                    {initials}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Weather Discount Banner */}
       {discountPercent > 0 && !weatherLoading && (
         <div style={{
           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -446,21 +430,19 @@ const CustomerKiosk = () => {
         </div>
       )}
 
-      {/* Main Content */}
       <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
-        {/* Left Sidebar - Categories */}
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
               <h3 style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Categories
+                CATEGORIES
               </h3>
             </div>
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
               {categories.map((category) => (
                 <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -474,48 +456,37 @@ const CustomerKiosk = () => {
                     transition: "all 0.2s",
                     fontWeight: "500",
                     fontSize: `${0.9375 * fontMultiplier}rem`,
-                    backgroundColor: selectedCategory === category.id ? category.color : "transparent",
-                    color: selectedCategory === category.id ? "white" : theme.text,
-                    transform: selectedCategory === category.id ? "translateX(4px)" : "none",
+                    backgroundColor: selectedCategory === category ? "#3b82f6" : "transparent",
+                    color: selectedCategory === category ? "white" : theme.text,
+                    transform: selectedCategory === category ? "translateX(4px)" : "none",
                   }}
                   onMouseEnter={(e) => {
-                    if (selectedCategory !== category.id) {
+                    if (selectedCategory !== category) {
                       e.currentTarget.style.backgroundColor = theme.hover;
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedCategory !== category.id) {
+                    if (selectedCategory !== category) {
                       e.currentTarget.style.backgroundColor = "transparent";
                     }
                   }}
                 >
-                  <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
-                  <span>{category.name}</span>
+                  <span>{category}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Center - Menu Items */}
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
               <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
-                {categories.find((c) => c.id === selectedCategory)?.name || "All Items"}
+                {selectedCategory || "All Items"}
               </h2>
 
-              {/* Search Bar */}
               <div style={{ position: "relative" }}>
-                <Search style={{
-                  position: "absolute",
-                  left: "1rem",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: theme.textMuted,
-                  width: `${20 * fontMultiplier}px`,
-                  height: `${20 * fontMultiplier}px`
-                }} />
+                <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                 <input
                   type="text"
                   placeholder="Search items..."
@@ -535,16 +506,24 @@ const CustomerKiosk = () => {
               </div>
             </div>
 
-            {loading ? (
-              <div style={{ textAlign: "center", fontSize: `${1.25 * fontMultiplier}rem`, color: theme.text }}>
-                Loading menu...
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
-                {filteredItems.map((item) => (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+              {loading ? (
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: theme.textMuted }}>
+                  Loading products...
+                </div>
+              ) : error ? (
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: "#ef4444" }}>
+                  {error}
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: theme.textMuted }}>
+                  No products found in this category
+                </div>
+              ) : (
+                filteredItems.map((item) => (
                   <button
                     key={item.product_id}
-                    onClick={() => addToCart(item)}
+                    onClick={() => handleItemClick(item)}
                     style={{
                       backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
                       border: `2px solid ${theme.border}`,
@@ -556,8 +535,8 @@ const CustomerKiosk = () => {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = `0 10px 25px -5px ${item.color}40`;
-                      e.currentTarget.style.borderColor = item.color;
+                      e.currentTarget.style.boxShadow = `0 10px 25px -5px rgba(59, 130, 246, 0.4)`;
+                      e.currentTarget.style.borderColor = "#3b82f6";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "none";
@@ -570,7 +549,7 @@ const CustomerKiosk = () => {
                       marginBottom: "0.75rem",
                       filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
                     }}>
-                      {item.image}
+                      {item.icon || "☕"}
                     </div>
                     <h3 style={{
                       fontSize: `${0.9375 * fontMultiplier}rem`,
@@ -587,36 +566,33 @@ const CustomerKiosk = () => {
                       marginBottom: "0.75rem",
                       lineHeight: "1.4"
                     }}>
-                      {item.size}
+                      {item.description || item.size}
                     </p>
                     <div style={{
                       fontSize: `${1.25 * fontMultiplier}rem`,
                       fontWeight: "bold",
-                      color: item.color
+                      color: "#3b82f6"
                     }}>
-                      ${item.price.toFixed(2)}
+                      ${Number(item.price).toFixed(2)}
                     </div>
                   </button>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Right Sidebar - Weather & Current Order */}
         <div>
-          {/* Weather Widget */}
           <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
             <WeatherWidget />
           </div>
 
-          {/* Current Order */}
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
               {cart.length > 0 && (
                 <button
-                  onClick={() => setCart([])}
+                  onClick={clearCart}
                   style={{
                     padding: "0.5rem",
                     borderRadius: "8px",
@@ -661,7 +637,7 @@ const CustomerKiosk = () => {
                   }}>
                     <ShoppingCart style={{ width: `${40 * fontMultiplier}px`, height: `${40 * fontMultiplier}px`, color: theme.accent }} />
                   </div>
-                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>Your cart is empty!</p>
+                  <p style={{ color: theme.textMuted, fontSize: `${0.875 * fontMultiplier}rem`, margin: 0 }}>No items in cart</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -677,8 +653,16 @@ const CustomerKiosk = () => {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.product_name}</div>
-                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${item.price.toFixed(2)}</div>
+                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name || item.product_name}</div>
+                          {item.customizations && (
+                            <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
+                              <div>Size: {item.customizations.size} • Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              {item.customizations.toppings.length > 0 && (
+                                <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${Number(item.price).toFixed(2)}</div>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
@@ -716,9 +700,10 @@ const CustomerKiosk = () => {
                         <div style={{
                           flex: 1,
                           textAlign: "center",
-                          fontSize: `${0.875 * fontMultiplier}rem`,
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
                           fontWeight: "600",
-                          color: theme.text
+                          color: theme.text,
+                          padding: "0.5rem"
                         }}>
                           {item.quantity}
                         </div>
@@ -742,7 +727,7 @@ const CustomerKiosk = () => {
                           +
                         </button>
                         <div style={{
-                          fontSize: `${0.875 * fontMultiplier}rem`,
+                          fontSize: `${0.9375 * fontMultiplier}rem`,
                           fontWeight: "bold",
                           color: theme.text,
                           minWidth: "70px",
@@ -762,7 +747,7 @@ const CustomerKiosk = () => {
                 <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: "1rem", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTotal()}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getSubtotal().toFixed(2)}</span>
                   </div>
 
                   {discountPercent > 0 && (
@@ -779,14 +764,14 @@ const CustomerKiosk = () => {
                         fontWeight: "600",
                         color: "#10b981"
                       }}>
-                        -${getDiscountAmount()}
+                        -${getDiscountAmount().toFixed(2)}
                       </span>
                     </div>
                   )}
 
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax()}</span>
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax().toFixed(2)}</span>
                   </div>
                   <div style={{
                     display: "flex",
@@ -795,49 +780,82 @@ const CustomerKiosk = () => {
                     borderTop: `1px solid ${theme.border}`
                   }}>
                     <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
-                    <span style={{
-                      fontSize: `${1.25 * fontMultiplier}rem`,
-                      fontWeight: "bold",
-                      color: highContrast ? theme.accent : "#3b82f6"
-                    }}>
-                      ${getGrandTotal()}
-                    </span>
+                    <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getTotal().toFixed(2)}</span>
                   </div>
                 </div>
 
+                {checkoutMessage && (
+                  <div style={{
+                    padding: `${0.75 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    marginBottom: "1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    backgroundColor: checkoutMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
+                    color: checkoutMessage.type === 'success' ? '#166534' : '#991b1b',
+                    border: `1px solid ${checkoutMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                  }}>
+                    <AlertCircle style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem` }}>{checkoutMessage.text}</span>
+                  </div>
+                )}
+
+                {inventoryWarnings.length > 0 && (
+                  <div style={{
+                    padding: `${0.75 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    marginBottom: "1rem",
+                    backgroundColor: '#fef3c7',
+                    border: '1px solid #fcd34d',
+                  }}>
+                    <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: '#92400e', marginBottom: "0.5rem" }}>
+                      ⚠️ Inventory Warnings:
+                    </div>
+                    {inventoryWarnings.map((warning, idx) => (
+                      <div key={idx} style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: '#b45309', marginBottom: "0.25rem" }}>
+                        • {warning.ingredient}: {warning.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <button
+                  onClick={handleCheckout}
+                  disabled={isProcessing}
                   style={{
                     width: "100%",
                     padding: `${0.875 * fontMultiplier}rem`,
                     borderRadius: "10px",
                     border: "none",
-                    background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                    color: highContrast ? "#000" : "white",
+                    background: isProcessing ? '#cbd5e1' : (highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"),
+                    color: isProcessing ? '#64748b' : (highContrast ? "#000" : "white"),
                     fontWeight: "bold",
                     fontSize: `${1 * fontMultiplier}rem`,
-                    cursor: "pointer",
+                    cursor: isProcessing ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "0.5rem",
                     transition: "all 0.2s",
-                    boxShadow: highContrast ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                    boxShadow: highContrast ? "none" : (isProcessing ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"),
+                    opacity: isProcessing ? 0.7 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    if (!highContrast) {
+                    if (!highContrast && !isProcessing) {
                       e.currentTarget.style.transform = "translateY(-2px)";
                       e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(59, 130, 246, 0.4)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!highContrast) {
+                    if (!highContrast && !isProcessing) {
                       e.currentTarget.style.transform = "none";
                       e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(59, 130, 246, 0.3)";
                     }
                   }}
                 >
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
-                  Checkout
+                  {isProcessing ? "Processing..." : "Process Payment"}
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
@@ -872,15 +890,201 @@ const CustomerKiosk = () => {
         </div>
       </div>
 
-      {/* Voice Control Panel */}
-      <VoiceControlPanel
-        isListening={isListening}
-        transcript={transcript}
-        isSupported={isSupported}
-        error={error}
-        onToggle={toggleListening}
-        commandFeedback={commandFeedback}
-      />
+      {customizingItem && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10000 
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "600px",
+            maxHeight: "90vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem?.icon || "🥤"}</div>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                    {customizingItem?.name || customizingItem?.product_name}
+                  </h3>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCustomizingItem(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Sugar Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {sugarOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setSugarLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: sugarLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: sugarLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: sugarLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: sugarLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+<div style={{ marginBottom: "2rem" }}>
+  <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Size</h4>
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+    {sizeOptions.map((size) => (
+      <button
+        key={size}
+        onClick={() => setDrinkSize(size)}
+        style={{
+          padding: "0.75rem",
+          borderRadius: "8px",
+          border: drinkSize === size ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+          backgroundColor: drinkSize === size ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+          color: drinkSize === size ? "#3b82f6" : theme.text,
+          fontWeight: drinkSize === size ? "bold" : "normal",
+          cursor: "pointer",
+          transition: "all 0.2s"
+        }}
+      >
+                        {size}
+                        </button>
+                        ))}
+                    </div>
+                </div>
+
+              <div style={{ marginBottom: "2rem" }}>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                  {iceOptions.map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setIceLevel(level)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "8px",
+                        border: iceLevel === level ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                        backgroundColor: iceLevel === level ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                        color: iceLevel === level ? "#3b82f6" : theme.text,
+                        fontWeight: iceLevel === level ? "bold" : "normal",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Toppings</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
+                  {menuItems["Toppings"].map((topping) => {
+                    const isSelected = selectedToppings.some(t => t.id === topping.id);
+                    return (
+                      <button
+                        key={topping.id}
+                        onClick={() => toggleTopping(topping)}
+                        style={{
+                          padding: "0.75rem",
+                          borderRadius: "8px",
+                          border: isSelected ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                          backgroundColor: isSelected ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+                          color: theme.text,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span>{topping.icon}</span>
+                          <span>{topping.name}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${Number(topping.price).toFixed(2)}</span>
+                          {isSelected && <Check size={16} color="#3b82f6" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: "1.5rem",
+              borderTop: `1px solid ${theme.border}`,
+              backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
+            }}>
+              <button
+                onClick={() => addToCart(customizingItem, { size: drinkSize, sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.125rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
+                }}
+              >
+                Add to Order - ${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
