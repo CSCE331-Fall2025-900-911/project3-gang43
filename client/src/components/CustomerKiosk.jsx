@@ -3,6 +3,8 @@ import { Globe, ZoomIn, Eye, Trash2, X, Mic, ShoppingCart, CreditCard, Search, P
 import GoogleTranslate from "./GoogleTranslate";
 import useVoiceControl from "../hooks/useVoiceControl";
 import VoiceControlPanel from "./VoiceControlPanel";
+import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
+import WeatherWidget from "./WeatherWidget";
 
 const CustomerKiosk = () => {
   const [highContrast, setHighContrast] = useState(false);
@@ -15,6 +17,15 @@ const CustomerKiosk = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [commandFeedback, setCommandFeedback] = useState(null);
+
+  // Weather discount hook
+  const {
+    discountPercent,
+    discountMessage,
+    loading: weatherLoading,
+    error: weatherError,
+    fetchWeatherByLocation
+  } = useWeatherDiscount('College Station');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -78,8 +89,17 @@ const CustomerKiosk = () => {
   };
 
   const getTotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
-  const getTax = () => (parseFloat(getTotal()) * 0.085).toFixed(2);
-  const getGrandTotal = () => (parseFloat(getTotal()) + parseFloat(getTax())).toFixed(2);
+  const getDiscountAmount = () => {
+    const subtotal = parseFloat(getTotal());
+    return (subtotal * discountPercent / 100).toFixed(2);
+  };
+  const getDiscountedTotal = () => {
+    const subtotal = parseFloat(getTotal());
+    const discount = parseFloat(getDiscountAmount());
+    return (subtotal - discount).toFixed(2);
+  };
+  const getTax = () => (parseFloat(getDiscountedTotal()) * 0.085).toFixed(2);
+  const getGrandTotal = () => (parseFloat(getDiscountedTotal()) + parseFloat(getTax())).toFixed(2);
 
   const filteredItems = selectedCategory === "all"
     ? menuItems.filter((item) => item.is_available && item.product_name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -370,6 +390,30 @@ const CustomerKiosk = () => {
         </div>
       </div>
 
+      {/* Weather Discount Banner */}
+      {discountPercent > 0 && !weatherLoading && (
+        <div style={{
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          padding: `${0.75 * fontMultiplier}rem ${1.5 * fontMultiplier}rem`,
+          borderRadius: '12px',
+          margin: `0 ${1.5 * fontMultiplier}rem`,
+          textAlign: 'center',
+          fontSize: `${0.875 * fontMultiplier}rem`,
+          fontWeight: '600',
+          boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)',
+          animation: 'fadeIn 0.5s ease-in-out'
+        }}>
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(-10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+          🎉 {discountMessage || `${discountPercent}% Weather Discount Active!`}
+        </div>
+      )}
+
       {/* Main Content */}
       <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
         {/* Left Sidebar - Categories */}
@@ -527,8 +571,14 @@ const CustomerKiosk = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Current Order */}
+        {/* Right Sidebar - Weather & Current Order */}
         <div>
+          {/* Weather Widget */}
+          <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
+            <WeatherWidget />
+          </div>
+
+          {/* Current Order */}
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
@@ -682,6 +732,26 @@ const CustomerKiosk = () => {
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Subtotal</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTotal()}</span>
                   </div>
+
+                  {discountPercent > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                      <span style={{
+                        fontSize: `${0.875 * fontMultiplier}rem`,
+                        color: "#10b981",
+                        fontWeight: "600"
+                      }}>
+                        {discountMessage || `${discountPercent}% Weather Discount`}
+                      </span>
+                      <span style={{
+                        fontSize: `${0.875 * fontMultiplier}rem`,
+                        fontWeight: "600",
+                        color: "#10b981"
+                      }}>
+                        -${getDiscountAmount()}
+                      </span>
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, color: theme.textMuted }}>Tax (8.5%)</span>
                     <span style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>${getTax()}</span>
@@ -693,7 +763,13 @@ const CustomerKiosk = () => {
                     borderTop: `1px solid ${theme.border}`
                   }}>
                     <span style={{ fontSize: `${1 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text }}>Total</span>
-                    <span style={{ fontSize: `${1.25 * fontMultiplier}rem`, fontWeight: "bold", color: highContrast ? theme.accent : "#3b82f6" }}>${getGrandTotal()}</span>
+                    <span style={{
+                      fontSize: `${1.25 * fontMultiplier}rem`,
+                      fontWeight: "bold",
+                      color: highContrast ? theme.accent : "#3b82f6"
+                    }}>
+                      ${getGrandTotal()}
+                    </span>
                   </div>
                 </div>
 
