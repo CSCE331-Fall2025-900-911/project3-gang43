@@ -4,10 +4,11 @@ const GoogleTranslate = () => {
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    const initializeGoogleTranslate = () => {
-      if (window.google && window.google.translate && !isInitialized.current) {
+    // Define the callback function that Google Translate will call
+    window.googleTranslateElementInit = () => {
+      if (!isInitialized.current) {
         const existingElement = document.getElementById('google_translate_element');
-        if (existingElement && existingElement.innerHTML.trim() === '') {
+        if (existingElement) {
           try {
             new window.google.translate.TranslateElement(
               {
@@ -26,22 +27,9 @@ const GoogleTranslate = () => {
       }
     };
 
-    // Check if Google Translate is loaded, if not wait for it
-    let checkInterval;
-    if (!isInitialized.current) {
-      checkInterval = setInterval(() => {
-        if (window.google && window.google.translate) {
-          clearInterval(checkInterval);
-          initializeGoogleTranslate();
-        }
-      }, 100);
-
-      // Cleanup after 10 seconds if not initialized
-      setTimeout(() => {
-        if (checkInterval) {
-          clearInterval(checkInterval);
-        }
-      }, 10000);
+    // If Google Translate is already loaded, initialize immediately
+    if (window.google && window.google.translate && !isInitialized.current) {
+      window.googleTranslateElementInit();
     }
 
     // Add custom styles only once
@@ -82,12 +70,6 @@ const GoogleTranslate = () => {
       `;
       document.head.appendChild(style);
     }
-
-    return () => {
-      if (checkInterval) {
-        clearInterval(checkInterval);
-      }
-    };
   }, []);
 
   return (

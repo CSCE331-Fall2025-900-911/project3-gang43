@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
+import VoiceControlPanel from "./VoiceControlPanel";
+import useVoiceControl from "../hooks/useVoiceControl";
 
 
 const CashierView = () => {
@@ -22,7 +24,9 @@ const CashierView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
-  
+  const [commandFeedback, setCommandFeedback] = useState(null);
+  const [lastCommand, setLastCommand] = useState('');
+
   const {
     discountPercent,
     discountMessage,
@@ -215,8 +219,8 @@ const CashierView = () => {
         product_name: item.product_name,
         quantity: item.quantity,
         price: item.price,
-        notes: item.customizations ? 
-          `Size: ${item.customizations.size}, Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}` 
+        notes: item.customizations ?
+          `Size: ${item.customizations.size}, Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}`
           : ""
       }));
 
@@ -251,6 +255,83 @@ const CashierView = () => {
       setIsProcessing(false);
     }
   };
+
+  const handleVoiceCommand = useCallback((command) => {
+    setLastCommand(command);
+    const lowerCommand = command.toLowerCase();
+
+    // Clear cart command
+    if (lowerCommand.includes('clear cart') || lowerCommand.includes('empty cart')) {
+      clearCart();
+      setCommandFeedback({ success: true, message: 'Cart cleared' });
+      return;
+    }
+
+    // Checkout command
+    if (lowerCommand.includes('checkout') || lowerCommand.includes('place order') || lowerCommand.includes('complete order')) {
+      handleCheckout();
+      setCommandFeedback({ success: true, message: 'Processing checkout...' });
+      return;
+    }
+
+    // Category selection
+    const categoryMatch = categories.find(cat =>
+      lowerCommand.includes(cat.toLowerCase())
+    );
+    if (categoryMatch) {
+      setSelectedCategory(categoryMatch);
+      setCommandFeedback({ success: true, message: `Showing ${categoryMatch}` });
+      return;
+    }
+
+    // Show all items
+    if (lowerCommand.includes('show all') || lowerCommand.includes('all items')) {
+      setSelectedCategory(categories[0] || null);
+      setCommandFeedback({ success: true, message: 'Showing all items' });
+      return;
+    }
+
+    // Add item to cart
+    if (lowerCommand.includes('add') || lowerCommand.includes('order') || lowerCommand.includes('want')) {
+      const foundProduct = products.find(product => {
+        const productName = product.product_name.toLowerCase();
+        return lowerCommand.includes(productName) ||
+               productName.split(' ').some(word => lowerCommand.includes(word));
+      });
+
+      if (foundProduct) {
+        addToCart(foundProduct);
+        setCommandFeedback({ success: true, message: `Added ${foundProduct.product_name} to cart` });
+      } else {
+        setCommandFeedback({ success: false, message: 'Product not found. Please try again.' });
+      }
+      return;
+    }
+
+    // Remove item from cart
+    if (lowerCommand.includes('remove') || lowerCommand.includes('delete')) {
+      const foundCartItem = cart.find(item => {
+        const itemName = (item.name || item.product_name).toLowerCase();
+        return lowerCommand.includes(itemName) ||
+               itemName.split(' ').some(word => lowerCommand.includes(word));
+      });
+
+      if (foundCartItem) {
+        removeFromCart(foundCartItem.cartId);
+        setCommandFeedback({ success: true, message: `Removed ${foundCartItem.name || foundCartItem.product_name} from cart` });
+      } else {
+        setCommandFeedback({ success: false, message: 'Item not found in cart' });
+      }
+      return;
+    }
+
+    setCommandFeedback({ success: false, message: 'Command not recognized. Try "add [item name]" or "checkout"' });
+  }, [cart, products, categories, selectedCategory]);
+
+  const voiceControl = useVoiceControl({
+    onCommand: handleVoiceCommand,
+    enabled: true
+  });
 
   const theme = highContrast ? {
     bg: "#000000",
@@ -298,26 +379,6 @@ const CashierView = () => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-              <button
-                style={{
-                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
-                  color: "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: "600",
-                  fontSize: `${0.875 * fontMultiplier}rem`,
-                  boxShadow: "0 2px 4px rgba(236, 72, 153, 0.3)"
-                }}
-              >
-                <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                Voice Order
-              </button>
-
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
                 style={{
@@ -1085,6 +1146,16 @@ const CashierView = () => {
           </div>
         </div>
       )}
+
+      <VoiceControlPanel
+        isListening={voiceControl.isListening}
+        transcript={voiceControl.transcript}
+        isSupported={voiceControl.isSupported}
+        error={voiceControl.error}
+        onToggle={voiceControl.toggleListening}
+        lastCommand={lastCommand}
+        commandFeedback={commandFeedback}
+      />
     </div>
   );
 };
