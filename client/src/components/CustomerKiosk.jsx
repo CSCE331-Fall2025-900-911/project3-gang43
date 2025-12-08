@@ -117,13 +117,17 @@ const CustomerKiosk = () => {
   const handleVoiceCommand = useCallback((command) => {
     const lowerCommand = command.toLowerCase().trim();
 
+    // Ignore very short commands that might be accidental
+    if (lowerCommand.length < 2) return;
+
     // Add to cart commands
     const addPatterns = [
       /add (.*)/,
       /i want (.*)/,
       /order (.*)/,
       /get me (.*)/,
-      /can i have (.*)/
+      /can i have (.*)/,
+      /^(.+)$/  // Fallback: try to match the entire command as an item name
     ];
 
     // Remove from cart commands
@@ -137,24 +141,28 @@ const CustomerKiosk = () => {
     if (lowerCommand.includes('show all') || lowerCommand.includes('all items')) {
       setSelectedCategory('all');
       setCommandFeedback({ success: true, message: 'Showing all items' });
+      setTimeout(() => setCommandFeedback(null), 2000);
       return;
     }
 
     if (lowerCommand.includes('milk tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
       setSelectedCategory('milk-tea');
       setCommandFeedback({ success: true, message: 'Showing milk tea' });
+      setTimeout(() => setCommandFeedback(null), 2000);
       return;
     }
 
     if (lowerCommand.includes('fruit tea') && !lowerCommand.includes('add') && !lowerCommand.includes('order')) {
       setSelectedCategory('fruit-tea');
       setCommandFeedback({ success: true, message: 'Showing fruit tea' });
+      setTimeout(() => setCommandFeedback(null), 2000);
       return;
     }
 
     if (lowerCommand.includes('clear cart')) {
       setCart([]);
       setCommandFeedback({ success: true, message: 'Cart cleared' });
+      setTimeout(() => setCommandFeedback(null), 2000);
       return;
     }
 
@@ -164,6 +172,7 @@ const CustomerKiosk = () => {
       } else {
         setCommandFeedback({ success: false, message: 'Your cart is empty' });
       }
+      setTimeout(() => setCommandFeedback(null), 2000);
       return;
     }
 
@@ -171,24 +180,44 @@ const CustomerKiosk = () => {
     for (const pattern of addPatterns) {
       const match = lowerCommand.match(pattern);
       if (match) {
-        const itemName = match[1];
-        const item = menuItems.find(m =>
-          m.product_name.toLowerCase().includes(itemName) ||
-          itemName.includes(m.product_name.toLowerCase())
-        );
+        const itemName = match[1].trim();
+        
+        // Find best matching item using fuzzy matching
+        let bestMatch = null;
+        let bestScore = 0;
 
-        if (item) {
-          addToCart(item);
+        menuItems.forEach(m => {
+          const productNameLower = m.product_name.toLowerCase();
+          
+          // Exact word match gets highest score
+          if (productNameLower.includes(itemName)) {
+            const score = itemName.length / productNameLower.length;
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatch = m;
+            }
+          }
+          // Partial word match
+          else {
+            const words = productNameLower.split(' ');
+            for (const word of words) {
+              if (word.startsWith(itemName.substring(0, 3))) {
+                if (0.5 > bestScore) {
+                  bestScore = 0.5;
+                  bestMatch = m;
+                }
+              }
+            }
+          }
+        });
+
+        if (bestMatch) {
+          addToCart(bestMatch);
           setCommandFeedback({
             success: true,
-            message: `Added ${item.product_name} to cart`
+            message: `Added ${bestMatch.product_name} to cart`
           });
-          return;
-        } else {
-          setCommandFeedback({
-            success: false,
-            message: `Could not find "${itemName}"`
-          });
+          setTimeout(() => setCommandFeedback(null), 2500);
           return;
         }
       }
@@ -198,7 +227,7 @@ const CustomerKiosk = () => {
     for (const pattern of removePatterns) {
       const match = lowerCommand.match(pattern);
       if (match) {
-        const itemName = match[1];
+        const itemName = match[1].trim();
         const cartItem = cart.find(c =>
           c.product_name.toLowerCase().includes(itemName) ||
           itemName.includes(c.product_name.toLowerCase())
@@ -210,22 +239,25 @@ const CustomerKiosk = () => {
             success: true,
             message: `Removed ${cartItem.product_name} from cart`
           });
+          setTimeout(() => setCommandFeedback(null), 2000);
           return;
         } else {
           setCommandFeedback({
             success: false,
             message: `"${itemName}" not found in cart`
           });
+          setTimeout(() => setCommandFeedback(null), 2000);
           return;
         }
       }
     }
 
-    // If no pattern matched
+    // If no command matched but something was said, provide helpful feedback
     setCommandFeedback({
       success: false,
-      message: 'Command not recognized. Try "Add [drink name]"'
+      message: 'Try: "Add [drink name]" or "Show all"'
     });
+    setTimeout(() => setCommandFeedback(null), 2500);
   }, [menuItems, cart, addToCart, removeFromCart]);
 
   // Voice control hook
