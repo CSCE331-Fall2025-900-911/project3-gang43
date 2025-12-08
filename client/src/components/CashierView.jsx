@@ -74,6 +74,8 @@ const CashierView = () => {
   const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
   const [sugarLevel, setSugarLevel] = useState("100%");
   const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice", "Hot"];
+  const sizeOptions = ["Small", "Medium", "Large"];
+  const [drinkSize, setDrinkSize] = useState("Medium");
   const [iceLevel, setIceLevel] = useState("Regular Ice");
   const [selectedToppings, setSelectedToppings] = useState([]);
 
@@ -99,6 +101,7 @@ const CashierView = () => {
       setSugarLevel("100%");
       setIceLevel("Regular Ice");
       setSelectedToppings([]);
+      setDrinkSize("Medium");
     } else {
       addToCart(item);
     }
@@ -113,6 +116,16 @@ const CashierView = () => {
 
   const addToCart = (item, customizations = null) => {
     let finalPrice = Number(item.price);
+
+    if (customizations && customizations.size) {
+        if (customizations.size === "Small") {
+            finalPrice -= 0.50;   // Small: $0.50 less
+        } else if (customizations.size === "Large") {
+            finalPrice += 0.75;   // Large: $0.75 more
+        }
+    }
+
+
     if (customizations && customizations.toppings) {
       finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
     }
@@ -203,7 +216,7 @@ const CashierView = () => {
         quantity: item.quantity,
         price: item.price,
         notes: item.customizations ? 
-          `Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}` 
+          `Size: ${item.customizations.size}, Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}` 
           : ""
       }));
 
@@ -643,7 +656,7 @@ const CashierView = () => {
                           <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name || item.product_name}</div>
                           {item.customizations && (
                             <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
-                              <div>Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              <div>Size: {item.customizations.size} • Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
                               {item.customizations.toppings.length > 0 && (
                                 <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
                               )}
@@ -957,6 +970,30 @@ const CashierView = () => {
                 </div>
               </div>
 
+<div style={{ marginBottom: "2rem" }}>
+  <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Size</h4>
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+    {sizeOptions.map((size) => (
+      <button
+        key={size}
+        onClick={() => setDrinkSize(size)}
+        style={{
+          padding: "0.75rem",
+          borderRadius: "8px",
+          border: drinkSize === size ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+          backgroundColor: drinkSize === size ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+          color: drinkSize === size ? "#3b82f6" : theme.text,
+          fontWeight: drinkSize === size ? "bold" : "normal",
+          cursor: "pointer",
+          transition: "all 0.2s"
+        }}
+      >
+                        {size}
+                        </button>
+                        ))}
+                    </div>
+                </div>
+
               <div style={{ marginBottom: "2rem" }}>
                 <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
@@ -1024,7 +1061,7 @@ const CashierView = () => {
               backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
             }}>
               <button
-                onClick={() => addToCart(customizingItem, { sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                onClick={() => addToCart(customizingItem, { size: drinkSize, sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
                 style={{
                   width: "100%",
                   padding: "1rem",
@@ -1042,7 +1079,7 @@ const CashierView = () => {
                   boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
                 }}
               >
-                Add to Order - ${(Number(customizingItem?.price || 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
+                Add to Order - ${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
               </button>
             </div>
           </div>
