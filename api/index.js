@@ -118,6 +118,63 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Weather API endpoint
+app.get("/api/weather", async (req, res) => {
+  try {
+    const { city, lat, lon } = req.query;
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        message: "OpenWeather API key not configured",
+      });
+    }
+
+    let url;
+    if (lat && lon) {
+      url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
+    } else if (city) {
+      url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=imperial`;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide either city name or coordinates (lat, lon)",
+      });
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (response.ok) {
+      res.json({
+        success: true,
+        data: {
+          temperature: Math.round(data.main.temp),
+          feelsLike: Math.round(data.main.feels_like),
+          humidity: data.main.humidity,
+          description: data.weather[0].description,
+          icon: data.weather[0].icon,
+          city: data.name,
+          country: data.sys.country,
+          windSpeed: Math.round(data.wind.speed),
+        },
+      });
+    } else {
+      res.status(response.status).json({
+        success: false,
+        message: data.message || "Failed to fetch weather data",
+      });
+    }
+  } catch (error) {
+    console.error("Weather API error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
 // Mount routers with pool dependency injection
 try {
   const productsRouter = createProductsRouter(pool);
