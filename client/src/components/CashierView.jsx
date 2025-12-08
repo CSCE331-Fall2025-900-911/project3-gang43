@@ -1,127 +1,123 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
-import GoogleTranslate from "./GoogleTranslate";
-import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
-
+import React, { useState } from "react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, ZoomIn, Eye, Volume2, X, Check } from "lucide-react";
 
 const CashierView = () => {
   const [cart, setCart] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("Milk Tea");
   const [orderNumber] = useState(Math.floor(1000 + Math.random() * 9000));
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [fontSize, setFontSize] = useState("base");
   const [highContrast, setHighContrast] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutMessage, setCheckoutMessage] = useState(null);
-  const [inventoryWarnings, setInventoryWarnings] = useState([]);
-  
-  const { user } = useAuth();
-  const displayName = user?.name || 'Demo Cashier';
-  const initials = displayName
-  .trim()
-  .split(' ')
-  .filter(word => word.length > 0)
-  .map(word => word[0])
-  .join('')
-  .toUpperCase();
 
-  // Fetch products and categories on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log('[CashierView] Starting data fetch...');
-        setLoading(true);
-        setError(null);
-        
-        console.log('[CashierView] API_URL being used:', 
-          typeof getAllProducts === 'function' ? 'Function imported successfully' : 'IMPORT ERROR');
-        
-        // Fetch categories and products in parallel
-        console.log('[CashierView] Fetching categories...');
-        const categoriesResponse = await getCategories();
-        console.log('[CashierView] Categories response:', categoriesResponse);
-
-        console.log('[CashierView] Fetching products...');
-        const productsResponse = await getAllProducts();
-        console.log('[CashierView] Products response:', productsResponse);
-
-        if (categoriesResponse.success) {
-          console.log('[CashierView] Setting categories:', categoriesResponse.data);
-          setCategories(categoriesResponse.data);
-          // Set first category as default
-          if (categoriesResponse.data.length > 0) {
-            console.log('[CashierView] Setting default category:', categoriesResponse.data[0]);
-            setSelectedCategory(categoriesResponse.data[0]);
-          }
-        } else {
-          console.warn('[CashierView] Categories response unsuccessful:', categoriesResponse);
-        }
-
-        if (productsResponse.success) {
-          console.log('[CashierView] Setting products:', productsResponse.data.length, 'items');
-          setProducts(productsResponse.data);
-        } else {
-          console.warn('[CashierView] Products response unsuccessful:', productsResponse);
-        }
-        
-        console.log('[CashierView] Data fetch completed successfully');
-      } catch (err) {
-        console.error('[CashierView] Error during data fetch:', err);
-        console.error('[CashierView] Error details:', {
-          message: err.message,
-          stack: err.stack,
-          toString: err.toString(),
-        });
-        setError('Failed to load products. Please refresh the page.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // --- Customization state (added to support item customization modal) ---
+  // Customization State
   const [customizingItem, setCustomizingItem] = useState(null);
-  const sugarOptions = ["0%", "25%", "50%", "75%", "100%"];
-  const [sugarLevel, setSugarLevel] = useState(sugarOptions[2]);
-  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice"];
-  const [iceLevel, setIceLevel] = useState(iceOptions[2]);
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const [iceLevel, setIceLevel] = useState("Regular");
   const [selectedToppings, setSelectedToppings] = useState([]);
 
-  // Minimal toppings list for customization UI when not provided by upstream code
+  const categories = [
+    { name: "Milk Tea", icon: "🧋", color: "#ec4899", key: "Milk Tea" },
+    { name: "Fruit Tea", icon: "🍓", color: "#f59e0b", key: "Fruit Tea" },
+    { name: "Smoothies", icon: "🥤", color: "#8b5cf6", key: "Smoothies" },
+    { name: "Coffee", icon: "☕", color: "#78350f", key: "Coffee" },
+    { name: "Toppings", icon: "⭐", color: "#14b8a6", key: "Toppings" },
+    { name: "Snacks", icon: "🍪", color: "#ef4444", key: "Snacks" },
+  ];
+
   const menuItems = {
+    "Milk Tea": [
+      { id: 1, name: "Classic Milk Tea", description: "Traditional black tea with milk", price: 4.5, icon: "☕", color: "#f472b6" },
+      { id: 2, name: "Taro Milk Tea", description: "Creamy taro flavor", price: 5.25, icon: "🌱", color: "#c084fc" },
+      { id: 3, name: "Thai Milk Tea", description: "Spiced with condensed milk", price: 4.75, icon: "☕", color: "#fb923c" },
+      { id: 4, name: "Matcha Milk Tea", description: "Premium matcha blend", price: 5.5, icon: "🍃", color: "#4ade80" },
+      { id: 5, name: "Brown Sugar Milk Tea", description: "Rich brown sugar syrup", price: 6.0, icon: "☕", color: "#d97706" },
+      { id: 6, name: "Hokkaido Milk Tea", description: "Premium Hokkaido milk", price: 5.75, icon: "❄️", color: "#60a5fa" },
+    ],
+    "Fruit Tea": [
+      { id: 7, name: "Mango Tea", description: "Fresh mango flavor", price: 5.0, icon: "🥭", color: "#fbbf24" },
+      { id: 8, name: "Strawberry Tea", description: "Sweet strawberry blend", price: 5.0, icon: "🍓", color: "#f87171" },
+      { id: 9, name: "Passion Fruit Tea", description: "Tropical passion fruit", price: 5.25, icon: "🍊", color: "#fb923c" },
+      { id: 10, name: "Lychee Tea", description: "Sweet lychee flavor", price: 5.0, icon: "🍑", color: "#fda4af" },
+    ],
+    Smoothies: [
+      { id: 11, name: "Berry Smoothie", description: "Mixed berry blend", price: 6.5, icon: "🫐", color: "#a855f7" },
+      { id: 12, name: "Mango Smoothie", description: "Tropical mango", price: 6.0, icon: "🥭", color: "#fbbf24" },
+      { id: 13, name: "Avocado Smoothie", description: "Creamy avocado", price: 6.25, icon: "🥑", color: "#22c55e" },
+    ],
+    Coffee: [
+      { id: 14, name: "Espresso", description: "Strong espresso shot", price: 3.5, icon: "☕", color: "#92400e" },
+      { id: 15, name: "Latte", description: "Smooth milk coffee", price: 4.5, icon: "☕", color: "#d97706" },
+      { id: 16, name: "Cappuccino", description: "Foamy cappuccino", price: 4.75, icon: "☕", color: "#b45309" },
+    ],
     Toppings: [
-      { id: 1, name: 'Boba', icon: '⚫', price: 0.5 },
-      { id: 2, name: 'Pudding', icon: '🍮', price: 0.75 },
-      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 }
-    ]
+      { id: 17, name: "Boba Pearls", description: "Classic tapioca pearls", price: 0.75, icon: "⚫", color: "#374151" },
+      { id: 18, name: "Pudding", description: "Creamy egg pudding", price: 1.0, icon: "🍮", color: "#fde047" },
+      { id: 19, name: "Aloe Vera", description: "Fresh aloe vera", price: 0.75, icon: "🌿", color: "#22c55e" },
+      { id: 20, name: "Jelly", description: "Fruit jelly", price: 0.75, icon: "🟣", color: "#a855f7" },
+    ],
+    Snacks: [
+      { id: 21, name: "Popcorn Chicken", description: "Crispy chicken bites", price: 5.5, icon: "🍗", color: "#f97316" },
+      { id: 22, name: "Spring Rolls", description: "Crispy spring rolls", price: 4.5, icon: "🥟", color: "#fbbf24" },
+      { id: 23, name: "Fries", description: "Golden french fries", price: 3.5, icon: "🍟", color: "#eab308" },
+    ],
+  };
+
+  const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
+  const iceOptions = ["No Ice", "Less Ice", "Regular", "Extra Ice", "Hot"];
+
+  // Helper to determine if an item is a drink based on which category list it belongs to
+  const isDrinkItem = (item) => {
+    const drinkCategories = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee"];
+    return Object.keys(menuItems).some(cat => 
+      drinkCategories.includes(cat) && menuItems[cat].some(i => i.id === item.id)
+    );
+  };
+
+  const handleItemClick = (item) => {
+    if (isDrinkItem(item)) {
+      setCustomizingItem(item);
+      setSugarLevel("100%");
+      setIceLevel("Regular");
+      setSelectedToppings([]);
+    } else {
+      addToCart(item);
+    }
   };
 
   const toggleTopping = (topping) => {
-    setSelectedToppings(prev => {
-      if (prev.some(t => t.id === topping.id)) return prev.filter(t => t.id !== topping.id);
-      return [...prev, topping];
-    });
+    if (selectedToppings.find(t => t.id === topping.id)) {
+      setSelectedToppings(selectedToppings.filter(t => t.id !== topping.id));
+    } else {
+      setSelectedToppings([...selectedToppings, topping]);
+    }
   };
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.product_id === item.product_id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
+  const addToCart = (item, customizations = null) => {
+    // Calculate price including toppings
+    let finalPrice = item.price;
+    if (customizations && customizations.toppings) {
+      finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
+    }
+
+    const itemToAdd = {
+      ...item,
+      price: finalPrice,
+      customizations: customizations
+    };
+
+    // Check for existing item with IDENTICAL customizations
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.id === item.id && 
+      JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+    );
+
+    if (existingItemIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingItemIndex].quantity += 1;
+      setCart(newCart);
     } else {
-      // ensure cart item has a friendly `name` property for legacy UI usage
-      setCart([...cart, { ...item, name: item.product_name || item.name, price: Number(item.price), cartId: Date.now(), quantity: 1 }]);
+      setCart([...cart, { ...itemToAdd, cartId: Date.now(), quantity: 1 }]);
     }
 
     setCustomizingItem(null);
@@ -143,17 +139,13 @@ const CashierView = () => {
 
   const clearCart = () => setCart([]);
 
-  const getSubtotal = () => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  const getSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const getTax = () => getSubtotal() * 0.085;
   const getTotal = () => getSubtotal() + getTax();
 
-  // Filter products by selected category
-  const currentItems = selectedCategory 
-    ? products.filter(item => item.category === selectedCategory)
-    : [];
-  
+  const currentItems = menuItems[selectedCategory] || [];
   const filteredItems = currentItems.filter(item =>
-    item.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getFontSizeMultiplier = () => {
@@ -163,77 +155,6 @@ const CashierView = () => {
   };
 
   const fontMultiplier = getFontSizeMultiplier();
-
-  const handleCheckout = async () => {
-    console.log('[Checkout] Starting checkout process...');
-    console.log('[Checkout] Cart items:', cart);
-    
-    if (cart.length === 0) {
-      console.warn('[Checkout] Cart is empty');
-      setCheckoutMessage({ type: 'error', text: 'Cart is empty' });
-      return;
-    }
-
-    setIsProcessing(true);
-    setCheckoutMessage(null);
-    setInventoryWarnings([]);
-
-    try {
-      const cartItems = cart.map(item => ({
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-
-      console.log('[Checkout] Preparing checkout with:');
-      console.log('[Checkout] - Items:', cartItems);
-      console.log('[Checkout] - Subtotal:', getSubtotal());
-      console.log('[Checkout] - Tax:', getTax());
-      console.log('[Checkout] - Total:', getTotal());
-      console.log('[Checkout] - Cashier:', displayName);
-
-      const response = await checkoutOrder(
-        cartItems,
-        getTotal(),
-        getSubtotal(),
-        getTax(),
-        displayName
-      );
-
-      console.log('[Checkout] Response received:', response);
-
-      if (response.success) {
-        console.log('[Checkout] Order successful! Order ID:', response.data.orderId);
-        setInventoryWarnings(response.data.warnings || []);
-        setCheckoutMessage({
-          type: 'success',
-          text: `Order #${response.data.orderId} processed successfully!`,
-        });
-        setCart([]);
-        // Clear message after 3 seconds
-        setTimeout(() => setCheckoutMessage(null), 3000);
-      } else {
-        console.error('[Checkout] Order failed:', response.message);
-        setCheckoutMessage({
-          type: 'error',
-          text: response.message || 'Failed to process order',
-        });
-      }
-    } catch (error) {
-      console.error('[Checkout] Exception during checkout:', error);
-      console.error('[Checkout] Error details:', {
-        message: error.message,
-        stack: error.stack,
-      });
-      setCheckoutMessage({
-        type: 'error',
-        text: 'Error processing order. Please try again.',
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   // Theme colors
   const theme = highContrast ? {
@@ -322,7 +243,7 @@ const CashierView = () => {
                 }}
               >
                 <ZoomIn style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
+                {fontSize === "base" ? "A" : fontSize === "large" ? "A+" : "A++"}
               </button>
 
               {/* Dark Mode Toggle */}
@@ -373,8 +294,8 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Cashier'}</div>
-                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{user?.role || 'Cashier'}</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>Mike Chen</div>
+                  <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>Cashier</div>
                 </div>
                 <div style={{
                   width: `${40 * fontMultiplier}px`,
@@ -388,7 +309,7 @@ const CashierView = () => {
                   fontWeight: "bold",
                   border: "2px solid #3b82f6"
                 }}>
-                    {initials}
+                  MC
                 </div>
               </div>
             </div>
@@ -409,8 +330,8 @@ const CashierView = () => {
             <div style={{ padding: `${0.75 * fontMultiplier}rem` }}>
               {categories.map((category) => (
                 <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
+                  key={category.key}
+                  onClick={() => setSelectedCategory(category.key)}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -424,22 +345,23 @@ const CashierView = () => {
                     transition: "all 0.2s",
                     fontWeight: "500",
                     fontSize: `${0.9375 * fontMultiplier}rem`,
-                    backgroundColor: selectedCategory === category ? "#3b82f6" : "transparent",
-                    color: selectedCategory === category ? "white" : theme.text,
-                    transform: selectedCategory === category ? "translateX(4px)" : "none",
+                    backgroundColor: selectedCategory === category.key ? category.color : "transparent",
+                    color: selectedCategory === category.key ? "white" : theme.text,
+                    transform: selectedCategory === category.key ? "translateX(4px)" : "none",
                   }}
                   onMouseEnter={(e) => {
-                    if (selectedCategory !== category) {
+                    if (selectedCategory !== category.key) {
                       e.currentTarget.style.backgroundColor = theme.hover;
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedCategory !== category) {
+                    if (selectedCategory !== category.key) {
                       e.currentTarget.style.backgroundColor = "transparent";
                     }
                   }}
                 >
-                  <span>{category}</span>
+                  <span style={{ fontSize: `${1.5 * fontMultiplier}rem` }}>{category.icon}</span>
+                  <span>{category.name}</span>
                 </button>
               ))}
             </div>
@@ -451,7 +373,7 @@ const CashierView = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
               <h2 style={{ fontSize: `${1.75 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, marginBottom: "1rem" }}>
-                {selectedCategory || "All Items"}
+                {categories.find(c => c.key === selectedCategory)?.name || "All Items"}
               </h2>
 
               {/* Search Bar */}
@@ -477,77 +399,63 @@ const CashierView = () => {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
-              {loading ? (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: theme.textMuted }}>
-                  Loading products...
-                </div>
-              ) : error ? (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: "#ef4444" }}>
-                  {error}
-                </div>
-              ) : filteredItems.length === 0 ? (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem", color: theme.textMuted }}>
-                  No products found in this category
-                </div>
-              ) : (
-                filteredItems.map((item) => (
-                  <button
-                    key={item.product_id}
-                    onClick={() => addToCart(item)}
-                    style={{
-                      backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
-                      border: `2px solid ${theme.border}`,
-                      borderRadius: "16px",
-                      padding: `${1.25 * fontMultiplier}rem`,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      textAlign: "center",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = `0 10px 25px -5px rgba(59, 130, 246, 0.4)`;
-                      e.currentTarget.style.borderColor = "#3b82f6";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "none";
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.borderColor = theme.border;
-                    }}
-                  >
-                    <div style={{
-                      fontSize: `${3 * fontMultiplier}rem`,
-                      marginBottom: "0.75rem",
-                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
-                    }}>
-                      {item.icon || "☕"}
-                    </div>
-                    <h3 style={{
-                      fontSize: `${0.9375 * fontMultiplier}rem`,
-                      fontWeight: "600",
-                      color: theme.text,
-                      marginBottom: "0.25rem",
-                      lineHeight: "1.3"
-                    }}>
-                      {item.product_name}
-                    </h3>
-                    <p style={{
-                      fontSize: `${0.75 * fontMultiplier}rem`,
-                      color: theme.textMuted,
-                      marginBottom: "0.75rem",
-                      lineHeight: "1.4"
-                    }}>
-                      {item.description || item.size}
-                    </p>
-                    <div style={{
-                      fontSize: `${1.25 * fontMultiplier}rem`,
-                      fontWeight: "bold",
-                      color: "#3b82f6"
-                    }}>
-                      ${Number(item.price).toFixed(2)}
-                    </div>
-                  </button>
-                ))
-              )}
+              {filteredItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  style={{
+                    backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
+                    border: `2px solid ${theme.border}`,
+                    borderRadius: "16px",
+                    padding: `${1.25 * fontMultiplier}rem`,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    textAlign: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = `0 10px 25px -5px ${item.color}40`;
+                    e.currentTarget.style.borderColor = item.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.borderColor = theme.border;
+                  }}
+                >
+                  <div style={{
+                    fontSize: `${3 * fontMultiplier}rem`,
+                    marginBottom: "0.75rem",
+                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                  }}>
+                    {item.icon}
+                  </div>
+                  <h3 style={{
+                    fontSize: `${0.9375 * fontMultiplier}rem`,
+                    fontWeight: "600",
+                    color: theme.text,
+                    marginBottom: "0.25rem",
+                    lineHeight: "1.3"
+                  }}>
+                    {item.name}
+                  </h3>
+                  <p style={{
+                    fontSize: `${0.75 * fontMultiplier}rem`,
+                    color: theme.textMuted,
+                    marginBottom: "0.75rem",
+                    lineHeight: "1.4"
+                  }}>
+                    {item.description}
+                  </p>
+                  <div style={{
+                    fontSize: `${1.25 * fontMultiplier}rem`,
+                    fontWeight: "bold",
+                    color: item.color
+                  }}>
+                    ${item.price.toFixed(2)}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -620,8 +528,16 @@ const CashierView = () => {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name || item.product_name}</div>
-                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${Number(item.price).toFixed(2)}</div>
+                          <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name}</div>
+                          {item.customizations && (
+                            <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
+                              <div>Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              {item.customizations.toppings.length > 0 && (
+                                <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>${item.price.toFixed(2)}</div>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
@@ -723,80 +639,39 @@ const CashierView = () => {
                   </div>
                 </div>
 
-                {/* Checkout Message */}
-                {checkoutMessage && (
-                  <div style={{
-                    padding: `${0.75 * fontMultiplier}rem`,
-                    borderRadius: "10px",
-                    marginBottom: "1rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    backgroundColor: checkoutMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
-                    color: checkoutMessage.type === 'success' ? '#166534' : '#991b1b',
-                    border: `1px solid ${checkoutMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-                  }}>
-                    <AlertCircle style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem` }}>{checkoutMessage.text}</span>
-                  </div>
-                )}
-
-                {/* Inventory Warnings */}
-                {inventoryWarnings.length > 0 && (
-                  <div style={{
-                    padding: `${0.75 * fontMultiplier}rem`,
-                    borderRadius: "10px",
-                    marginBottom: "1rem",
-                    backgroundColor: '#fef3c7',
-                    border: '1px solid #fcd34d',
-                  }}>
-                    <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: '#92400e', marginBottom: "0.5rem" }}>
-                      ⚠️ Inventory Warnings:
-                    </div>
-                    {inventoryWarnings.map((warning, idx) => (
-                      <div key={idx} style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: '#b45309', marginBottom: "0.25rem" }}>
-                        • {warning.ingredient}: {warning.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 <button
-                  onClick={handleCheckout}
-                  disabled={isProcessing}
                   style={{
                     width: "100%",
                     padding: `${0.875 * fontMultiplier}rem`,
                     borderRadius: "10px",
                     border: "none",
-                    background: isProcessing ? '#cbd5e1' : (highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"),
-                    color: isProcessing ? '#64748b' : (highContrast ? "#000" : "white"),
+                    background: highContrast ? theme.accent : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                    color: highContrast ? "#000" : "white",
                     fontWeight: "bold",
                     fontSize: `${1 * fontMultiplier}rem`,
-                    cursor: isProcessing ? "not-allowed" : "pointer",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "0.5rem",
                     transition: "all 0.2s",
-                    boxShadow: highContrast ? "none" : (isProcessing ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"),
-                    opacity: isProcessing ? 0.7 : 1,
+                    boxShadow: highContrast ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
                   }}
                   onMouseEnter={(e) => {
-                    if (!highContrast && !isProcessing) {
+                    if (!highContrast) {
                       e.currentTarget.style.transform = "translateY(-2px)";
                       e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(59, 130, 246, 0.4)";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!highContrast && !isProcessing) {
+                    if (!highContrast) {
                       e.currentTarget.style.transform = "none";
                       e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(59, 130, 246, 0.3)";
                     }
                   }}
                 >
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
-                  {isProcessing ? "Processing..." : "Process Payment"}
+                  Process Payment
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
@@ -864,13 +739,13 @@ const CashierView = () => {
               justifyContent: "space-between",
               alignItems: "center"
             }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ fontSize: "2.5rem" }}>{customizingItem?.icon}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem.icon}</div>
                 <div>
                   <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
-                    {customizingItem?.name}
+                    {customizingItem.name}
                   </h3>
-                  <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
+                  <p style={{ color: theme.textMuted, margin: 0 }}>${customizingItem.price.toFixed(2)}</p>
                 </div>
               </div>
               <button
@@ -966,7 +841,7 @@ const CashierView = () => {
                           <span>{topping.name}</span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${Number(topping.price).toFixed(2)}</span>
+                          <span style={{ fontSize: "0.875rem", color: theme.textMuted }}>+${topping.price.toFixed(2)}</span>
                           {isSelected && <Check size={16} color="#3b82f6" />}
                         </div>
                       </button>
@@ -1000,7 +875,7 @@ const CashierView = () => {
                   boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
                 }}
               >
-                Add to Order - ${(Number(customizingItem?.price || 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
+                Add to Order - ${(customizingItem.price + selectedToppings.reduce((sum, t) => sum + t.price, 0)).toFixed(2)}
               </button>
             </div>
           </div>
