@@ -6,6 +6,17 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState(null);
   const recognitionRef = useRef(null);
+  const enabledRef = useRef(enabled);
+  const onCommandRef = useRef(onCommand);
+
+  // Keep refs up to date
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    onCommandRef.current = onCommand;
+  }, [onCommand]);
 
   useEffect(() => {
     // Check if browser supports Web Speech API
@@ -21,7 +32,7 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
 
     // Initialize speech recognition
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false;  // Changed to false for better command-by-command handling
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
@@ -32,13 +43,15 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
 
     recognition.onend = () => {
       setIsListening(false);
-      // Auto-restart if still enabled
-      if (enabled && recognitionRef.current) {
-        try {
-          recognition.start();
-        } catch (err) {
-          console.log('Recognition restart error:', err);
-        }
+      // Auto-restart if still enabled - use ref to avoid stale closure
+      if (enabledRef.current && recognitionRef.current) {
+        setTimeout(() => {
+          try {
+            recognitionRef.current.start();
+          } catch (err) {
+            console.log('Recognition restart error:', err);
+          }
+        }, 100); // Small delay to prevent race conditions
       }
     };
 
@@ -73,11 +86,11 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
       // Process final transcript
       if (finalTranscript) {
         const command = finalTranscript.trim().toLowerCase();
-        if (onCommand) {
-          onCommand(command);
+        if (onCommandRef.current) {
+          onCommandRef.current(command);
         }
-        // Clear transcript after processing
-        setTimeout(() => setTranscript(''), 2000);
+        // Keep transcript visible briefly for feedback
+        setTimeout(() => setTranscript(''), 1500);
       }
     };
 
@@ -85,11 +98,15 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {
+          console.log('Error stopping recognition:', err);
+        }
         recognitionRef.current = null;
       }
     };
-  }, [onCommand, enabled]);
+  }, []);
 
   const startListening = useCallback(() => {
     if (!isSupported || !recognitionRef.current) return;
@@ -108,14 +125,22 @@ const useVoiceControl = ({ onCommand, enabled = true }) => {
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        setTranscript('');
+      } catch (err) {
+        console.log('Error stopping recognition:', err);
+      }
     }
   }, []);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
+      enabledRef.current = false;
       stopListening();
     } else {
+      enabledRef.current = true;
       startListening();
     }
   }, [isListening, startListening, stopListening]);

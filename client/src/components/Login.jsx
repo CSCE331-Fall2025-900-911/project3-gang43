@@ -260,10 +260,6 @@ const Login = ({ onSuccess }) => {
             <button
               onClick={() => {
                 login({
-                    name: 'Demo Cashier',
-                  email: 'demo@bubblepos.com',
-                  picture: '',
-                  role: 'Cashier'
                 });
                 if (onSuccess) onSuccess();
               }}

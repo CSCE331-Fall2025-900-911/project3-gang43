@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
+import VoiceControlPanel from "./VoiceControlPanel";
+import useVoiceControl from "../hooks/useVoiceControl";
 
 
 const CashierView = () => {
@@ -22,8 +24,9 @@ const CashierView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
-  
-  // Weather discount hook
+  const [commandFeedback, setCommandFeedback] = useState(null);
+  const [lastCommand, setLastCommand] = useState('');
+
   const {
     discountPercent,
     discountMessage,
@@ -42,53 +45,26 @@ const CashierView = () => {
   .join('')
   .toUpperCase();
 
-  // Fetch products and categories on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('[CashierView] Starting data fetch...');
         setLoading(true);
         setError(null);
         
-        console.log('[CashierView] API_URL being used:', 
-          typeof getAllProducts === 'function' ? 'Function imported successfully' : 'IMPORT ERROR');
-        
-        // Fetch categories and products in parallel
-        console.log('[CashierView] Fetching categories...');
         const categoriesResponse = await getCategories();
-        console.log('[CashierView] Categories response:', categoriesResponse);
-
-        console.log('[CashierView] Fetching products...');
         const productsResponse = await getAllProducts();
-        console.log('[CashierView] Products response:', productsResponse);
 
         if (categoriesResponse.success) {
-          console.log('[CashierView] Setting categories:', categoriesResponse.data);
           setCategories(categoriesResponse.data);
-          // Set first category as default
           if (categoriesResponse.data.length > 0) {
-            console.log('[CashierView] Setting default category:', categoriesResponse.data[0]);
             setSelectedCategory(categoriesResponse.data[0]);
           }
-        } else {
-          console.warn('[CashierView] Categories response unsuccessful:', categoriesResponse);
         }
 
         if (productsResponse.success) {
-          console.log('[CashierView] Setting products:', productsResponse.data.length, 'items');
           setProducts(productsResponse.data);
-        } else {
-          console.warn('[CashierView] Products response unsuccessful:', productsResponse);
         }
-        
-        console.log('[CashierView] Data fetch completed successfully');
       } catch (err) {
-        console.error('[CashierView] Error during data fetch:', err);
-        console.error('[CashierView] Error details:', {
-          message: err.message,
-          stack: err.stack,
-          toString: err.toString(),
-        });
         setError('Failed to load products. Please refresh the page.');
       } finally {
         setLoading(false);
@@ -98,21 +74,41 @@ const CashierView = () => {
     fetchData();
   }, []);
 
-  // --- Customization state (added to support item customization modal) ---
   const [customizingItem, setCustomizingItem] = useState(null);
-  const sugarOptions = ["0%", "25%", "50%", "75%", "100%"];
-  const [sugarLevel, setSugarLevel] = useState(sugarOptions[2]);
-  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice"];
-  const [iceLevel, setIceLevel] = useState(iceOptions[2]);
+  const sugarOptions = ["0%", "30%", "50%", "70%", "100%", "120%"];
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const iceOptions = ["No Ice", "Light Ice", "Regular Ice", "Extra Ice", "Hot"];
+  const sizeOptions = ["Small", "Medium", "Large"];
+  const [drinkSize, setDrinkSize] = useState("Medium");
+  const [iceLevel, setIceLevel] = useState("Regular Ice");
   const [selectedToppings, setSelectedToppings] = useState([]);
 
-  // Minimal toppings list for customization UI when not provided by upstream code
   const menuItems = {
     Toppings: [
       { id: 1, name: 'Boba', icon: '⚫', price: 0.5 },
       { id: 2, name: 'Pudding', icon: '🍮', price: 0.75 },
-      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 }
+      { id: 3, name: 'Aloe', icon: '🌿', price: 0.5 },
+      { id: 4, name: 'Grass Jelly', icon: '⚫', price: 0.75 },
+      { id: 5, name: 'Lychee Jelly', icon: '⚪', price: 0.75 },
+      { id: 6, name: 'Cheese Foam', icon: '🧀', price: 1.25 }
     ]
+  };
+
+  const isDrinkItem = (item) => {
+    const drinkKeywords = ["Milk Tea", "Fruit Tea", "Smoothies", "Coffee", "Tea", "Slush"];
+    return drinkKeywords.some(keyword => (item.category || "").includes(keyword));
+  };
+
+  const handleItemClick = (item) => {
+    if (isDrinkItem(item)) {
+      setCustomizingItem(item);
+      setSugarLevel("100%");
+      setIceLevel("Regular Ice");
+      setSelectedToppings([]);
+      setDrinkSize("Medium");
+    } else {
+      addToCart(item);
+    }
   };
 
   const toggleTopping = (topping) => {
@@ -122,17 +118,41 @@ const CashierView = () => {
     });
   };
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.product_id === item.product_id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.product_id === item.product_id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
+  const addToCart = (item, customizations = null) => {
+    let finalPrice = Number(item.price);
+
+    if (customizations && customizations.size) {
+        if (customizations.size === "Small") {
+            finalPrice -= 0.50;   // Small: $0.50 less
+        } else if (customizations.size === "Large") {
+            finalPrice += 0.75;   // Large: $0.75 more
+        }
+    }
+
+
+    if (customizations && customizations.toppings) {
+      finalPrice += customizations.toppings.reduce((sum, t) => sum + t.price, 0);
+    }
+
+    const itemToAdd = {
+      ...item,
+      name: item.product_name || item.name,
+      price: finalPrice,
+      customizations: customizations,
+      quantity: 1
+    };
+
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.product_id === item.product_id && 
+      JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+    );
+
+    if (existingItemIndex > -1) {
+      const newCart = [...cart];
+      newCart[existingItemIndex].quantity += 1;
+      setCart(newCart);
     } else {
-      // ensure cart item has a friendly `name` property for legacy UI usage
-      setCart([...cart, { ...item, name: item.product_name || item.name, price: Number(item.price), cartId: Date.now(), quantity: 1 }]);
+      setCart([...cart, { ...itemToAdd, cartId: Date.now() }]);
     }
 
     setCustomizingItem(null);
@@ -143,10 +163,9 @@ const CashierView = () => {
   };
 
   const updateQuantity = (cartId, delta) => {
-    setCart(cart.map(item => {
+    setCart(prevCart => prevCart.map(item => {
       if (item.cartId === cartId) {
-        const newQuantity = item.quantity + delta;
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        return { ...item, quantity: item.quantity + delta };
       }
       return item;
     }).filter(item => item.quantity > 0));
@@ -167,7 +186,6 @@ const CashierView = () => {
   const getTax = () => getDiscountedSubtotal() * 0.085;
   const getTotal = () => getDiscountedSubtotal() + getTax();
 
-  // Filter products by selected category
   const currentItems = selectedCategory 
     ? products.filter(item => item.category === selectedCategory)
     : [];
@@ -185,11 +203,7 @@ const CashierView = () => {
   const fontMultiplier = getFontSizeMultiplier();
 
   const handleCheckout = async () => {
-    console.log('[Checkout] Starting checkout process...');
-    console.log('[Checkout] Cart items:', cart);
-    
     if (cart.length === 0) {
-      console.warn('[Checkout] Cart is empty');
       setCheckoutMessage({ type: 'error', text: 'Cart is empty' });
       return;
     }
@@ -204,18 +218,10 @@ const CashierView = () => {
         product_name: item.product_name,
         quantity: item.quantity,
         price: item.price,
+        notes: item.customizations ?
+          `Size: ${item.customizations.size}, Sugar: ${item.customizations.sugar}, Ice: ${item.customizations.ice}, Toppings: ${item.customizations.toppings.map(t=>t.name).join(', ')}`
+          : ""
       }));
-
-      console.log('[Checkout] Preparing checkout with:');
-      console.log('[Checkout] - Items:', cartItems);
-      console.log('[Checkout] - Original Subtotal:', getSubtotal());
-      if (discountPercent > 0) {
-        console.log('[Checkout] - Weather Discount:', `${discountPercent}% (-$${getDiscountAmount().toFixed(2)})`);
-        console.log('[Checkout] - Discounted Subtotal:', getDiscountedSubtotal());
-      }
-      console.log('[Checkout] - Tax:', getTax());
-      console.log('[Checkout] - Total:', getTotal());
-      console.log('[Checkout] - Cashier:', displayName);
 
       const response = await checkoutOrder(
         cartItems,
@@ -225,31 +231,21 @@ const CashierView = () => {
         displayName
       );
 
-      console.log('[Checkout] Response received:', response);
-
       if (response.success) {
-        console.log('[Checkout] Order successful! Order ID:', response.data.orderId);
         setInventoryWarnings(response.data.warnings || []);
         setCheckoutMessage({
           type: 'success',
           text: `Order #${response.data.orderId} processed successfully!`,
         });
         setCart([]);
-        // Clear message after 3 seconds
         setTimeout(() => setCheckoutMessage(null), 3000);
       } else {
-        console.error('[Checkout] Order failed:', response.message);
         setCheckoutMessage({
           type: 'error',
           text: response.message || 'Failed to process order',
         });
       }
     } catch (error) {
-      console.error('[Checkout] Exception during checkout:', error);
-      console.error('[Checkout] Error details:', {
-        message: error.message,
-        stack: error.stack,
-      });
       setCheckoutMessage({
         type: 'error',
         text: 'Error processing order. Please try again.',
@@ -259,7 +255,83 @@ const CashierView = () => {
     }
   };
 
-  // Theme colors
+  const handleVoiceCommand = useCallback((command) => {
+    setLastCommand(command);
+    const lowerCommand = command.toLowerCase();
+
+    // Clear cart command
+    if (lowerCommand.includes('clear cart') || lowerCommand.includes('empty cart')) {
+      clearCart();
+      setCommandFeedback({ success: true, message: 'Cart cleared' });
+      return;
+    }
+
+    // Checkout command
+    if (lowerCommand.includes('checkout') || lowerCommand.includes('place order') || lowerCommand.includes('complete order')) {
+      handleCheckout();
+      setCommandFeedback({ success: true, message: 'Processing checkout...' });
+      return;
+    }
+
+    // Category selection
+    const categoryMatch = categories.find(cat =>
+      lowerCommand.includes(cat.toLowerCase())
+    );
+    if (categoryMatch) {
+      setSelectedCategory(categoryMatch);
+      setCommandFeedback({ success: true, message: `Showing ${categoryMatch}` });
+      return;
+    }
+
+    // Show all items
+    if (lowerCommand.includes('show all') || lowerCommand.includes('all items')) {
+      setSelectedCategory(categories[0] || null);
+      setCommandFeedback({ success: true, message: 'Showing all items' });
+      return;
+    }
+
+    // Add item to cart
+    if (lowerCommand.includes('add') || lowerCommand.includes('order') || lowerCommand.includes('want')) {
+      const foundProduct = products.find(product => {
+        const productName = product.product_name.toLowerCase();
+        return lowerCommand.includes(productName) ||
+               productName.split(' ').some(word => lowerCommand.includes(word));
+      });
+
+      if (foundProduct) {
+        addToCart(foundProduct);
+        setCommandFeedback({ success: true, message: `Added ${foundProduct.product_name} to cart` });
+      } else {
+        setCommandFeedback({ success: false, message: 'Product not found. Please try again.' });
+      }
+      return;
+    }
+
+    // Remove item from cart
+    if (lowerCommand.includes('remove') || lowerCommand.includes('delete')) {
+      const foundCartItem = cart.find(item => {
+        const itemName = (item.name || item.product_name).toLowerCase();
+        return lowerCommand.includes(itemName) ||
+               itemName.split(' ').some(word => lowerCommand.includes(word));
+      });
+
+      if (foundCartItem) {
+        removeFromCart(foundCartItem.cartId);
+        setCommandFeedback({ success: true, message: `Removed ${foundCartItem.name || foundCartItem.product_name} from cart` });
+      } else {
+        setCommandFeedback({ success: false, message: 'Item not found in cart' });
+      }
+      return;
+    }
+
+    setCommandFeedback({ success: false, message: 'Command not recognized. Try "add [item name]" or "checkout"' });
+  }, [cart, products, categories, selectedCategory]);
+
+  const voiceControl = useVoiceControl({
+    onCommand: handleVoiceCommand,
+    enabled: false
+  });
+
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
@@ -280,7 +352,6 @@ const CashierView = () => {
 
   return (
     <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
-      {/* Header */}
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -307,28 +378,6 @@ const CashierView = () => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-              {/* Voice Order Button */}
-              <button
-                style={{
-                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
-                  borderRadius: "10px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
-                  color: "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: "600",
-                  fontSize: `${0.875 * fontMultiplier}rem`,
-                  boxShadow: "0 2px 4px rgba(236, 72, 153, 0.3)"
-                }}
-              >
-                <Volume2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                Voice Order
-              </button>
-
-              {/* Font Size Toggle */}
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
                 style={{
@@ -349,7 +398,6 @@ const CashierView = () => {
                 {fontSize === "base" ? "Zoom" : fontSize === "large" ? "Zoom+" : "Zoom++"}
               </button>
 
-              {/* Dark Mode Toggle */}
               <button
                 onClick={() => {
                   setDarkMode(!darkMode);
@@ -372,7 +420,6 @@ const CashierView = () => {
                 {darkMode ? <Sun style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} /> : <Moon style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />}
               </button>
 
-              {/* High Contrast Toggle */}
               <button
                 onClick={() => {
                   setHighContrast(!highContrast);
@@ -397,7 +444,7 @@ const CashierView = () => {
 
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingLeft: "0.75rem", borderLeft: `1px solid ${theme.border}` }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Cashier'}</div>
+                  <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{user?.name || 'Demo Cashier'}</div>
                   <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted }}>{user?.role || 'Cashier'}</div>
                 </div>
                 <div style={{
@@ -420,7 +467,6 @@ const CashierView = () => {
         </div>
       </div>
 
-      {/* Weather Discount Banner */}
       {discountPercent > 0 && !weatherLoading && (
         <div style={{
           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -444,9 +490,7 @@ const CashierView = () => {
         </div>
       )}
 
-      {/* Main Content */}
       <div style={{ padding: `${1.5 * fontMultiplier}rem`, display: "grid", gridTemplateColumns: "250px 1fr 350px", gap: `${1.5 * fontMultiplier}rem` }}>
-        {/* Left Sidebar - Categories */}
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, overflow: "hidden" }}>
             <div style={{ padding: `${1.25 * fontMultiplier}rem`, borderBottom: `1px solid ${theme.border}` }}>
@@ -494,7 +538,6 @@ const CashierView = () => {
           </div>
         </div>
 
-        {/* Center - Menu Items */}
         <div>
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
@@ -502,7 +545,6 @@ const CashierView = () => {
                 {selectedCategory || "All Items"}
               </h2>
 
-              {/* Search Bar */}
               <div style={{ position: "relative" }}>
                 <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: theme.textMuted, width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                 <input
@@ -541,7 +583,7 @@ const CashierView = () => {
                 filteredItems.map((item) => (
                   <button
                     key={item.product_id}
-                    onClick={() => addToCart(item)}
+                    onClick={() => handleItemClick(item)}
                     style={{
                       backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
                       border: `2px solid ${theme.border}`,
@@ -600,14 +642,11 @@ const CashierView = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Weather & Current Order */}
         <div>
-          {/* Weather Widget */}
           <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
             <WeatherWidget />
           </div>
 
-          {/* Current Order */}
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
@@ -675,6 +714,14 @@ const CashierView = () => {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.5rem" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: `${0.875 * fontMultiplier}rem`, fontWeight: "600", color: theme.text }}>{item.name || item.product_name}</div>
+                          {item.customizations && (
+                            <div style={{ fontSize: `${0.75 * fontMultiplier}rem`, color: theme.textMuted, marginTop: "0.25rem" }}>
+                              <div>Size: {item.customizations.size} • Sugar: {item.customizations.sugar} • Ice: {item.customizations.ice}</div>
+                              {item.customizations.toppings.length > 0 && (
+                                <div>+ {item.customizations.toppings.map(t => t.name).join(", ")}</div>
+                              )}
+                            </div>
+                          )}
                           <div style={{ fontSize: `${0.8125 * fontMultiplier}rem`, color: theme.textMuted }}>${Number(item.price).toFixed(2)}</div>
                         </div>
                         <button
@@ -797,7 +844,6 @@ const CashierView = () => {
                   </div>
                 </div>
 
-                {/* Checkout Message */}
                 {checkoutMessage && (
                   <div style={{
                     padding: `${0.75 * fontMultiplier}rem`,
@@ -815,7 +861,6 @@ const CashierView = () => {
                   </div>
                 )}
 
-                {/* Inventory Warnings */}
                 {inventoryWarnings.length > 0 && (
                   <div style={{
                     padding: `${0.75 * fontMultiplier}rem`,
@@ -905,7 +950,6 @@ const CashierView = () => {
         </div>
       </div>
 
-      {/* Customization Modal */}
       {customizingItem && (
         <div style={{
           position: "fixed",
@@ -917,7 +961,7 @@ const CashierView = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 10000 // Increased z-index to ensure it sits on top of other fixed elements
+          zIndex: 10000 
         }}>
           <div style={{
             backgroundColor: theme.card,
@@ -939,10 +983,10 @@ const CashierView = () => {
               alignItems: "center"
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ fontSize: "2.5rem" }}>{customizingItem?.icon}</div>
+                <div style={{ fontSize: "2.5rem" }}>{customizingItem?.icon || "🥤"}</div>
                 <div>
                   <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
-                    {customizingItem?.name}
+                    {customizingItem?.name || customizingItem?.product_name}
                   </h3>
                   <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
                 </div>
@@ -962,7 +1006,6 @@ const CashierView = () => {
             </div>
 
             <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
-              {/* Sugar Level */}
               <div style={{ marginBottom: "2rem" }}>
                 <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Sugar Level</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
@@ -987,7 +1030,30 @@ const CashierView = () => {
                 </div>
               </div>
 
-              {/* Ice Level */}
+<div style={{ marginBottom: "2rem" }}>
+  <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Size</h4>
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+    {sizeOptions.map((size) => (
+      <button
+        key={size}
+        onClick={() => setDrinkSize(size)}
+        style={{
+          padding: "0.75rem",
+          borderRadius: "8px",
+          border: drinkSize === size ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+          backgroundColor: drinkSize === size ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : "transparent",
+          color: drinkSize === size ? "#3b82f6" : theme.text,
+          fontWeight: drinkSize === size ? "bold" : "normal",
+          cursor: "pointer",
+          transition: "all 0.2s"
+        }}
+      >
+                        {size}
+                        </button>
+                        ))}
+                    </div>
+                </div>
+
               <div style={{ marginBottom: "2rem" }}>
                 <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Ice Level</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
@@ -1012,7 +1078,6 @@ const CashierView = () => {
                 </div>
               </div>
 
-              {/* Toppings */}
               <div>
                 <h4 style={{ fontSize: "1rem", fontWeight: "600", color: theme.text, marginBottom: "1rem" }}>Toppings</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
@@ -1056,7 +1121,7 @@ const CashierView = () => {
               backgroundColor: darkMode ? "#0f172a" : "#f8fafc"
             }}>
               <button
-                onClick={() => addToCart(customizingItem, { sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
+                onClick={() => addToCart(customizingItem, { size: drinkSize, sugar: sugarLevel, ice: iceLevel, toppings: selectedToppings })}
                 style={{
                   width: "100%",
                   padding: "1rem",
@@ -1074,12 +1139,22 @@ const CashierView = () => {
                   boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)"
                 }}
               >
-                Add to Order - ${(Number(customizingItem?.price || 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
+                Add to Order - ${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <VoiceControlPanel
+        isListening={voiceControl.isListening}
+        transcript={voiceControl.transcript}
+        isSupported={voiceControl.isSupported}
+        error={voiceControl.error}
+        onToggle={voiceControl.toggleListening}
+        lastCommand={lastCommand}
+        commandFeedback={commandFeedback}
+      />
     </div>
   );
 };
