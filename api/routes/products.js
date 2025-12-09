@@ -64,6 +64,104 @@ export default function createProductsRouter(pool) {
     }
   });
 
+  router.get("/employees", async (req, res) => {
+    try {
+      const result = await pool.query(`
+      SELECT employee_id, employee_name, role, active
+      FROM employees
+      ORDER BY employee_id ASC;
+    `);
+
+      res.json({ success: true, data: result.rows });
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch employees" });
+    }
+  });
+
+  router.post("/employees", async (req, res) => {
+    try {
+      const { employee_name, role } = req.body;
+
+      if (!employee_name || !role) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee name and role are required",
+        });
+      }
+
+      const result = await pool.query(
+        `
+      INSERT INTO employees (employee_name, role, active)
+      VALUES ($1, $2, true)
+      RETURNING employee_id, employee_name, role, active;
+      `,
+        [employee_name, role]
+      );
+
+      res.json({ success: true, data: result.rows[0] });
+    } catch (err) {
+      console.error("Error adding employee:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to add employee",
+      });
+    }
+  });
+
+  // UPDATE employee
+  router.put("/employees/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { employee_name, role, active } = req.body;
+
+      const result = await pool.query(
+        `
+      UPDATE employees
+      SET employee_name = $1,
+          role = $2,
+          active = $3
+      WHERE employee_id = $4
+      RETURNING employee_id, employee_name, role, active;
+      `,
+        [employee_name, role, active, id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
+
+      res.json({ success: true, data: result.rows[0] });
+    } catch (err) {
+      console.error("Error updating employee:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update employee",
+      });
+    }
+  });
+
+  // DELETE employee
+  router.delete("/employees/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      await pool.query(`DELETE FROM employees WHERE employee_id = $1`, [id]);
+
+      res.json({ success: true, message: "Employee removed" });
+    } catch (err) {
+      console.error("Error deleting employee:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete employee",
+      });
+    }
+  });
   // GET products by category
   router.get("/:category", async (req, res) => {
     const { category } = req.params;

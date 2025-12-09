@@ -59,6 +59,11 @@ const ManagerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [weeklyRevenue, setWeeklyRevenue] = useState([]);
   const [topItems, setTopItems] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [newEmployee, setNewEmployee] = useState({
+    employee_name: "",
+    role: "",
+  });
 
   const openReorderModal = (item) => {
     setReorderItem(item);
@@ -156,6 +161,7 @@ const ManagerDashboard = () => {
           recentOrdersRes,
           weeklyRevenueRes,
           topItemsRes,
+          employeesRes,
         ] = await Promise.all([
           axios.get("/api/products"),
           axios.get("/api/orders/history"),
@@ -164,6 +170,7 @@ const ManagerDashboard = () => {
           axios.get("/api/products/orders/recent"),
           axios.get("/api/products/revenue/last7days"),
           axios.get("/api/products/orders/top-items/last7days"),
+          axios.get("/api/products/employees"),
         ]);
 
         console.log("Products data:", productsRes.data);
@@ -171,6 +178,7 @@ const ManagerDashboard = () => {
         console.log("Inventory data:", inventoryRes.data);
         console.log("Dashboard stats:", statsRes.data);
         console.log("Recent orders:", recentOrdersRes.data);
+        console.log("Employees :", employeesRes.data);
 
         setProducts(productsRes.data.data || []);
         setOrderHistory(ordersHistoryRes.data.data || []);
@@ -179,6 +187,7 @@ const ManagerDashboard = () => {
         setRecentOrders(recentOrdersRes.data.data || []);
         setWeeklyRevenue(weeklyRevenueRes.data.data || []);
         setTopItems(topItemsRes.data.data || []);
+        setEmployees(employeesRes.data.data || []);
 
         setLoading(false);
       } catch (error) {
@@ -265,6 +274,43 @@ const ManagerDashboard = () => {
         barThickness: 24,
       },
     ],
+  };
+
+  const handleAddEmployee = async () => {
+    if (!newEmployee.employee_name.trim() || !newEmployee.role.trim()) {
+      alert("Please fill out all fields");
+      return;
+    }
+
+    try {
+      const res = await axios.post("/api/products/employees", newEmployee);
+
+      if (res.data.success) {
+        setEmployees([...employees, res.data.data]);
+
+        // Reset form
+        setNewEmployee({ employee_name: "", role: "" });
+      }
+    } catch (err) {
+      console.error("Error adding employee:", err);
+      alert("Failed to add employee.");
+    }
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this employee?"))
+      return;
+
+    try {
+      const res = await axios.delete(`/api/products/employees/${id}`);
+
+      if (res.data.success) {
+        setEmployees(employees.filter((emp) => emp.employee_id !== id));
+      }
+    } catch (err) {
+      console.error("Error deleting employee:", err);
+      alert("Failed to delete employee.");
+    }
   };
 
   const sidebarItems = [
@@ -750,6 +796,190 @@ const ManagerDashboard = () => {
                 </div>
               ))}
             </div>
+          </div>
+          {/* ===========================
+    EMPLOYEE MANAGEMENT SECTION
+   =========================== */}
+          <div
+            style={{
+              marginTop: "3rem",
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "bold",
+                marginBottom: "1rem",
+                color: "#0f172a",
+              }}
+            >
+              Employee Roster
+            </h2>
+
+            {/* Add Employee */}
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                marginBottom: "1.5rem",
+                alignItems: "center",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Employee Name"
+                value={newEmployee.employee_name}
+                onChange={(e) =>
+                  setNewEmployee({
+                    ...newEmployee,
+                    employee_name: e.target.value,
+                  })
+                }
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  flex: 1,
+                }}
+              />
+
+              <input
+                type="text"
+                placeholder="Role"
+                value={newEmployee.role}
+                onChange={(e) =>
+                  setNewEmployee({ ...newEmployee, role: e.target.value })
+                }
+                style={{
+                  padding: "0.75rem",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  flex: 1,
+                }}
+              />
+
+              <button
+                onClick={async () => {
+                  if (
+                    !newEmployee.employee_name.trim() ||
+                    !newEmployee.role.trim()
+                  ) {
+                    alert("Please fill in all fields");
+                    return;
+                  }
+
+                  try {
+                    const response = await axios.post(
+                      "/api/products/employees",
+                      newEmployee
+                    );
+
+                    if (response.data.success) {
+                      setEmployees([...employees, response.data.data]);
+                      setNewEmployee({ employee_name: "", role: "" });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error adding employee");
+                  }
+                }}
+                style={{
+                  background: "#6366f1",
+                  color: "white",
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Employee List */}
+            <h3 style={{ marginBottom: "0.5rem", color: "#1e293b" }}>
+              Current Employees
+            </h3>
+
+            {employees.length === 0 ? (
+              <p style={{ color: "#64748b" }}>No employees found.</p>
+            ) : (
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  marginTop: "1rem",
+                }}
+              >
+                <thead style={{ background: "#f1f5f9" }}>
+                  <tr>
+                    <th style={{ padding: "0.75rem", textAlign: "left" }}>
+                      Name
+                    </th>
+                    <th style={{ padding: "0.75rem", textAlign: "left" }}>
+                      Role
+                    </th>
+                    <th style={{ padding: "0.75rem", textAlign: "right" }}>
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((emp) => (
+                    <tr
+                      key={emp.employee_id}
+                      style={{ borderBottom: "1px solid #e2e8f0" }}
+                    >
+                      <td style={{ padding: "0.75rem" }}>
+                        {emp.employee_name}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>{emp.role}</td>
+
+                      <td style={{ padding: "0.75rem", textAlign: "right" }}>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(`Delete ${emp.employee_name}?`))
+                              return;
+
+                            try {
+                              const res = await axios.delete(
+                                `/api/products/employees/${emp.employee_id}`
+                              );
+
+                              if (res.data.success) {
+                                setEmployees(
+                                  employees.filter(
+                                    (e) => e.employee_id !== emp.employee_id
+                                  )
+                                );
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert("Failed to delete employee");
+                            }
+                          }}
+                          style={{
+                            background: "#ef4444",
+                            color: "white",
+                            padding: "0.5rem 1rem",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            border: "none",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Inventory Alerts */}
