@@ -315,8 +315,6 @@ const ManagerDashboard = () => {
 
   const sidebarItems = [
     { name: "Analytics", icon: LayoutDashboard },
-    { name: "Orders", icon: ShoppingCart },
-    { name: "Inventory", icon: Package },
     { name: "Staff", icon: Users },
   ];
 
