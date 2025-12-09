@@ -199,6 +199,49 @@ const ManagerDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  const fetchXReport = async () => {
+    try {
+      const response = await axios.get("/api/products/reports/x-report-pdf", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "x-report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error fetching X-Report PDF:", error);
+    }
+  };
+
+  const generateZReport = async () => {
+    try {
+      const response = await axios.post(
+        "/api/products/reports/z-report-pdf",
+        null,
+        {
+          // if you want to pass a request body use { data: {...} }
+          responseType: "blob",
+        }
+      );
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "z-report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error fetching Z-Report PDF:", error);
+    }
+  };
+
   const getLowStockItems = () => {
     const lowStockItems = inventoryData.filter((item) => {
       const quantity = parseFloat(item.quantity);
@@ -1158,6 +1201,35 @@ const ManagerDashboard = () => {
               </div>
             </div>
           )}
+          <div style={{ marginTop: "20px", display: "flex", gap: "12px" }}>
+            <button
+              onClick={fetchXReport}
+              style={{
+                padding: "10px 18px",
+                background: "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Download X Report
+            </button>
+
+            <button
+              onClick={generateZReport}
+              style={{
+                padding: "10px 18px",
+                background: "#F44336",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Download Z Report
+            </button>
+          </div>
         </div>
       </div>
     </div>

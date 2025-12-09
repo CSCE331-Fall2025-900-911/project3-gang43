@@ -1,4 +1,5 @@
 import express from "express";
+import PDFDocument from "pdfkit";
 
 export default function createProductsRouter(pool) {
   const router = express.Router();
@@ -463,6 +464,202 @@ LIMIT 3;
         success: false,
         message: "Failed to fetch top-selling products",
       });
+    }
+  });
+
+  // --- REPORT QUERIES ---
+
+  // 1. Get Totals (Summary)
+  const totalsQuery = `
+    SELECT
+        COUNT(order_id) AS total_orders,
+        COALESCE(SUM(total_amount), 0) AS total_sales
+    FROM orders
+    WHERE status = 'completed';
+`;
+
+  // 2. Get Hourly Breakdown (The Graph)
+  const hourlyQuery = `
+    SELECT
+        date_trunc('hour', order_date) AS hour_start,
+        COUNT(order_id) AS order_count,
+        COALESCE(SUM(total_amount), 0) AS total_sales
+    FROM orders
+    WHERE status = 'completed'
+    GROUP BY date_trunc('hour', order_date)
+    ORDER BY hour_start;
+`;
+  // --- ROUTES ---
+
+  // X-REPORT: View current open sales (No changes to DB)
+  router.get("/reports/x-report-pdf", async (req, res) => {
+    try {
+      const totalResult = await pool.query(totalsQuery);
+      const hourlyResult = await pool.query(hourlyQuery);
+
+      const summary = totalResult.rows[0];
+      const hourlySales = hourlyResult.rows;
+
+      const doc = new PDFDocument({ margin: 50 });
+      let buffers = [];
+      doc.on("data", buffers.push.bind(buffers));
+      doc.on("end", () => {
+        const pdfData = Buffer.concat(buffers);
+        res.set({
+          "Content-Type": "application/pdf",
+          "Content-Disposition": 'attachment; filename="x-report.pdf"',
+        });
+        res.send(pdfData);
+      });
+
+      // Title
+      doc.fontSize(20).text("X-Report", { align: "center" });
+      doc.moveDown(2);
+
+      // Summary table
+      doc.fontSize(14).text("Summary", { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Total Orders: ${summary.total_orders}`);
+      doc.text(`Total Sales: $${Number(summary.total_sales).toFixed(2)}`);
+      doc.moveDown(1);
+
+      // Hourly Sales Table
+      doc.fontSize(14).text("Hourly Sales", { underline: true });
+      doc.moveDown(0.5);
+
+      // Table headers
+      doc.font("Helvetica-Bold").text("Hour", 50, doc.y, { width: 150 });
+      doc.text("Order Count", 200, doc.y, { width: 100 });
+      doc.text("Total Sales", 310, doc.y, { width: 100 });
+      doc.moveDown(0.2);
+      doc.font("Helvetica"); // Reset font for values
+
+      // Rows
+      hourlySales.forEach((row) => {
+        const hour = new Date(row.hour_start).toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+        doc.text(hour, 50, doc.y, { width: 150 });
+        doc.text(row.order_count, 200, doc.y, { width: 100 });
+        doc.text(`$${Number(row.total_sales).toFixed(2)}`, 310, doc.y, {
+          width: 100,
+        });
+        doc.moveDown(0.2);
+      });
+
+      doc.end();
+    } catch (err) {
+      console.error("Error generating X-Report PDF:", err);
+      res.status(500).json({ error: "Failed to generate X-Report PDF" });
+    }
+  });
+
+  // Z-REPORT: View sales AND close the shift (Transaction)
+  router.post("/reports/z-report-pdf", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Get all "new" completed orders to report
+      const summaryResult = await client.query(`
+      SELECT COUNT(order_id) AS total_orders,
+             COALESCE(SUM(total_amount), 0) AS total_sales
+      FROM orders
+      WHERE status = 'completed' AND reported = FALSE;
+    `);
+      const hourlyResult = await client.query(`
+      SELECT date_trunc('hour', order_date) AS hour_start,
+             COUNT(order_id) AS order_count,
+             COALESCE(SUM(total_amount), 0) AS total_sales
+      FROM orders
+      WHERE status = 'completed' AND reported = FALSE
+      GROUP BY date_trunc('hour', order_date)
+      ORDER BY hour_start;
+    `);
+
+      // "Close the shift": mark those orders as reported
+      await client.query(`
+      UPDATE orders SET reported = TRUE 
+      WHERE status = 'completed' AND reported = FALSE;
+    `);
+      await client.query("COMMIT");
+
+      // Make PDF
+      const summary = summaryResult.rows[0];
+      const hourlySales = hourlyResult.rows;
+
+      const doc = new PDFDocument({ margin: 50 });
+      let buffers = [];
+      doc.on("data", buffers.push.bind(buffers));
+      doc.on("end", () => {
+        const pdfData = Buffer.concat(buffers);
+        res.set({
+          "Content-Type": "application/pdf",
+          "Content-Disposition": 'attachment; filename="z-report.pdf"',
+        });
+        res.send(pdfData);
+      });
+
+      // Title
+      doc.fontSize(20).text("Z-Report (Shift Closed)", { align: "center" });
+      doc.moveDown(2);
+
+      // If empty, show a friendly message
+      if (!summary || summary.total_orders === "0") {
+        doc
+          .fontSize(14)
+          .text("There are no completed sales to close for this shift.", {
+            align: "center",
+          });
+        doc
+          .fontSize(12)
+          .text("All completed orders have been reported!", {
+            align: "center",
+          });
+      } else {
+        // Summary section
+        doc.fontSize(14).text("Summary", { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12);
+        doc.text(`Orders Closed: ${summary.total_orders}`);
+        doc.text(
+          `Shift Sales Total: $${Number(summary.total_sales).toFixed(2)}`
+        );
+        doc.moveDown(1);
+
+        // Hourly Sales Table
+        doc.fontSize(14).text("Hourly Sales This Shift", { underline: true });
+        doc.moveDown(0.5);
+
+        // Table headers
+        doc.font("Helvetica-Bold").text("Hour", 50, doc.y, { width: 150 });
+        doc.text("Order Count", 200, doc.y, { width: 100 });
+        doc.text("Total Sales", 310, doc.y, { width: 100 });
+        doc.moveDown(0.2);
+        doc.font("Helvetica"); // Reset font for values
+
+        hourlySales.forEach((row) => {
+          const hour = new Date(row.hour_start).toLocaleString("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+          doc.text(hour, 50, doc.y, { width: 150 });
+          doc.text(row.order_count, 200, doc.y, { width: 100 });
+          doc.text(`$${Number(row.total_sales).toFixed(2)}`, 310, doc.y, {
+            width: 100,
+          });
+          doc.moveDown(0.2);
+        });
+      }
+      doc.end();
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error("Error generating Z-Report PDF:", err);
+      res.status(500).json({ error: "Failed to generate Z-Report PDF" });
+    } finally {
+      client.release();
     }
   });
 
