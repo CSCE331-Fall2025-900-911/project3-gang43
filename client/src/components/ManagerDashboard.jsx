@@ -976,10 +976,10 @@ const ManagerDashboard = () => {
                       key={emp.employee_id}
                       style={{ borderBottom: "1px solid #e2e8f0" }}
                     >
-                      <td style={{ padding: "0.75rem" }}>
+                      <td style={{ padding: "0.75rem", color: "black" }}>
                         {emp.employee_name}
                       </td>
-                      <td style={{ padding: "0.75rem" }}>{emp.role}</td>
+                      <td style={{ padding: "0.75rem", color: "black" }}>{emp.role}</td>
 
                       <td style={{ padding: "0.75rem", textAlign: "right" }}>
                         <button
