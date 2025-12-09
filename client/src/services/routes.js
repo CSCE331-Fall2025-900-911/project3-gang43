@@ -62,18 +62,68 @@ export async function getCategories() {
     console.log('[API] Fetching categories from:', url);
     const res = await fetch(url);
     console.log('[API] Categories response status:', res.status);
-    
+
     if (!res.ok) {
       const errorText = await res.text();
       console.error('[API] Categories response error:', errorText);
       throw new Error(`HTTP ${res.status}: Failed to fetch categories`);
     }
-    
+
     const data = await res.json();
     console.log('[API] Categories received:', data.data || []);
     return data;
   } catch (error) {
     console.error('[API] Error fetching categories:', error.message, error);
+    throw error;
+  }
+}
+
+export async function createProduct(productData) {
+  try {
+    const url = `${API_URL}/products`;
+    console.log('[API] Creating product at:', url);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(productData),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API] Create product error:', errorText);
+      throw new Error(`HTTP ${res.status}: Failed to create product`);
+    }
+
+    const data = await res.json();
+    console.log('[API] Product created:', data.data);
+    return data;
+  } catch (error) {
+    console.error('[API] Error creating product:', error.message, error);
+    throw error;
+  }
+}
+
+export async function deleteProduct(productId) {
+  try {
+    const url = `${API_URL}/products/${productId}`;
+    console.log('[API] Deleting product:', productId);
+    const res = await fetch(url, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API] Delete product error:', errorText);
+      throw new Error(`HTTP ${res.status}: Failed to delete product`);
+    }
+
+    const data = await res.json();
+    console.log('[API] Product deleted:', data.data);
+    return data;
+  } catch (error) {
+    console.error('[API] Error deleting product:', error.message, error);
     throw error;
   }
 }

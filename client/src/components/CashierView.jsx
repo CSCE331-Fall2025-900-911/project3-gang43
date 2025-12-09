@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker } from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker, PlusCircle, Edit } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
-import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
+import { getAllProducts, getCategories, checkoutOrder, createProduct, deleteProduct } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
 import VoiceControlPanel from "./VoiceControlPanel";
@@ -27,6 +27,15 @@ const CashierView = () => {
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
   const [commandFeedback, setCommandFeedback] = useState(null);
   const [lastCommand, setLastCommand] = useState('');
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showManageMode, setShowManageMode] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    product_name: '',
+    category: '',
+    price: '',
+    icon: '🥤',
+    description: ''
+  });
 
   const {
     discountPercent,
@@ -375,6 +384,64 @@ const CashierView = () => {
     speak(text);
   }, [cart, discountPercent, getSubtotal, getDiscountAmount, getTax, getTotal, speak]);
 
+  const handleAddProduct = async () => {
+    if (!newProduct.product_name || !newProduct.category || !newProduct.price) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await createProduct({
+        ...newProduct,
+        price: parseFloat(newProduct.price)
+      });
+
+      if (response.success) {
+        // Refresh products list
+        const productsResponse = await getAllProducts();
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+
+        // Reset form and close modal
+        setNewProduct({
+          product_name: '',
+          category: '',
+          price: '',
+          icon: '🥤',
+          description: ''
+        });
+        setShowAddProductModal(false);
+        alert('Product added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert('Failed to add product. Please try again.');
+    }
+  };
+
+  const handleDeleteProduct = async (productId, productName) => {
+    if (!confirm(`Are you sure you want to delete "${productName}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await deleteProduct(productId);
+
+      if (response.success) {
+        // Refresh products list
+        const productsResponse = await getAllProducts();
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+        alert('Product deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
+  };
+
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
@@ -421,6 +488,50 @@ const CashierView = () => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowManageMode(!showManageMode)}
+                style={{
+                  padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                  borderRadius: "10px",
+                  border: "none",
+                  background: showManageMode ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  color: "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontWeight: "600",
+                  fontSize: `${0.875 * fontMultiplier}rem`,
+                  boxShadow: showManageMode ? "0 2px 4px rgba(16, 185, 129, 0.3)" : "0 2px 4px rgba(99, 102, 241, 0.3)"
+                }}
+              >
+                <Edit style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                {showManageMode ? "Done Managing" : "Manage Products"}
+              </button>
+
+              {showManageMode && (
+                <button
+                  onClick={() => setShowAddProductModal(true)}
+                  style={{
+                    padding: `${0.625 * fontMultiplier}rem ${1 * fontMultiplier}rem`,
+                    borderRadius: "10px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    fontWeight: "600",
+                    fontSize: `${0.875 * fontMultiplier}rem`,
+                    boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)"
+                  }}
+                >
+                  <PlusCircle style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                  Add Drink
+                </button>
+              )}
+
               <button
                 onClick={() => setFontSize(fontSize === "base" ? "large" : fontSize === "large" ? "xlarge" : "base")}
                 style={{
@@ -624,61 +735,103 @@ const CashierView = () => {
                 </div>
               ) : (
                 filteredItems.map((item) => (
-                  <button
+                  <div
                     key={item.product_id}
-                    onClick={() => handleItemClick(item)}
-                    style={{
-                      backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
-                      border: `2px solid ${theme.border}`,
-                      borderRadius: "16px",
-                      padding: `${1.25 * fontMultiplier}rem`,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      textAlign: "center",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = `0 10px 25px -5px rgba(59, 130, 246, 0.4)`;
-                      e.currentTarget.style.borderColor = "#3b82f6";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "none";
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.borderColor = theme.border;
-                    }}
+                    style={{ position: "relative" }}
                   >
-                    <div style={{
-                      fontSize: `${3 * fontMultiplier}rem`,
-                      marginBottom: "0.75rem",
-                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
-                    }}>
-                      {item.icon || "☕"}
-                    </div>
-                    <h3 style={{
-                      fontSize: `${0.9375 * fontMultiplier}rem`,
-                      fontWeight: "600",
-                      color: theme.text,
-                      marginBottom: "0.25rem",
-                      lineHeight: "1.3"
-                    }}>
-                      {item.product_name}
-                    </h3>
-                    <p style={{
-                      fontSize: `${0.75 * fontMultiplier}rem`,
-                      color: theme.textMuted,
-                      marginBottom: "0.75rem",
-                      lineHeight: "1.4"
-                    }}>
-                      {item.description || item.size}
-                    </p>
-                    <div style={{
-                      fontSize: `${1.25 * fontMultiplier}rem`,
-                      fontWeight: "bold",
-                      color: "#3b82f6"
-                    }}>
-                      ${Number(item.price).toFixed(2)}
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => !showManageMode && handleItemClick(item)}
+                      style={{
+                        width: "100%",
+                        backgroundColor: highContrast ? "#1a1a1a" : (darkMode ? "#1e293b" : "white"),
+                        border: `2px solid ${theme.border}`,
+                        borderRadius: "16px",
+                        padding: `${1.25 * fontMultiplier}rem`,
+                        cursor: showManageMode ? "default" : "pointer",
+                        transition: "all 0.2s",
+                        textAlign: "center",
+                        opacity: showManageMode ? 0.7 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!showManageMode) {
+                          e.currentTarget.style.transform = "translateY(-4px)";
+                          e.currentTarget.style.boxShadow = `0 10px 25px -5px rgba(59, 130, 246, 0.4)`;
+                          e.currentTarget.style.borderColor = "#3b82f6";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!showManageMode) {
+                          e.currentTarget.style.transform = "none";
+                          e.currentTarget.style.boxShadow = "none";
+                          e.currentTarget.style.borderColor = theme.border;
+                        }
+                      }}
+                    >
+                      <div style={{
+                        fontSize: `${3 * fontMultiplier}rem`,
+                        marginBottom: "0.75rem",
+                        filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                      }}>
+                        {item.icon || "☕"}
+                      </div>
+                      <h3 style={{
+                        fontSize: `${0.9375 * fontMultiplier}rem`,
+                        fontWeight: "600",
+                        color: theme.text,
+                        marginBottom: "0.25rem",
+                        lineHeight: "1.3"
+                      }}>
+                        {item.product_name}
+                      </h3>
+                      <p style={{
+                        fontSize: `${0.75 * fontMultiplier}rem`,
+                        color: theme.textMuted,
+                        marginBottom: "0.75rem",
+                        lineHeight: "1.4"
+                      }}>
+                        {item.description || item.size}
+                      </p>
+                      <div style={{
+                        fontSize: `${1.25 * fontMultiplier}rem`,
+                        fontWeight: "bold",
+                        color: "#3b82f6"
+                      }}>
+                        ${Number(item.price).toFixed(2)}
+                      </div>
+                    </button>
+                    {showManageMode && (
+                      <button
+                        onClick={() => handleDeleteProduct(item.product_id, item.product_name)}
+                        style={{
+                          position: "absolute",
+                          top: "8px",
+                          right: "8px",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "#ef4444",
+                          color: "white",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#dc2626";
+                          e.currentTarget.style.transform = "scale(1.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#ef4444";
+                          e.currentTarget.style.transform = "scale(1)";
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 ))
               )}
             </div>
@@ -1235,6 +1388,207 @@ const CashierView = () => {
               >
                 Add to Order - ${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Product Modal */}
+      {showAddProductModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2000,
+          padding: "1rem"
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            maxWidth: "500px",
+            width: "100%",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                Add New Drink
+              </h3>
+              <button
+                onClick={() => setShowAddProductModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.product_name}
+                  onChange={(e) => setNewProduct({ ...newProduct, product_name: e.target.value })}
+                  placeholder="e.g., Classic Milk Tea"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Category *
+                </label>
+                <select
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                >
+                  <option value="">Select category...</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Price *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                  placeholder="e.g., 5.50"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Icon (Emoji)
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.icon}
+                  onChange={(e) => setNewProduct({ ...newProduct, icon: e.target.value })}
+                  placeholder="🥤"
+                  maxLength="2"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "2rem",
+                    textAlign: "center"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Description
+                </label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  placeholder="e.g., Rich and creamy milk tea"
+                  rows="3"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem",
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  onClick={() => setShowAddProductModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: "transparent",
+                    color: theme.text,
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddProduct}
+                  style={{
+                    flex: 1,
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "white",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  Add Drink
+                </button>
+              </div>
             </div>
           </div>
         </div>

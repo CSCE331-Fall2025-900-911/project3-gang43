@@ -163,6 +163,83 @@ export default function createProductsRouter(pool) {
       });
     }
   });
+  // POST create new product
+  router.post("/", async (req, res) => {
+    console.log("[Server] POST /api/products");
+    try {
+      const { product_name, category, size, price, icon, color, description } = req.body;
+
+      if (!product_name || !category || !price) {
+        return res.status(400).json({
+          success: false,
+          message: "Product name, category, and price are required",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        INSERT INTO products (product_name, category, size, price, is_available, icon, color, description)
+        VALUES ($1, $2, $3, $4, true, $5, $6, $7)
+        RETURNING product_id, product_name, category, size, price, is_available, icon, color, description
+        `,
+        [product_name, category, size || 'Medium', price, icon || '🥤', color || '#3b82f6', description || '']
+      );
+
+      console.log("[Server] Product created with ID:", result.rows[0].product_id);
+      res.json({
+        success: true,
+        data: result.rows[0],
+      });
+    } catch (error) {
+      console.error("[Server] Error creating product:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create product",
+        error: error.message,
+      });
+    }
+  });
+
+  // DELETE product
+  router.delete("/:productId", async (req, res) => {
+    console.log("[Server] DELETE /api/products/:productId");
+    try {
+      const { productId } = req.params;
+
+      // Soft delete by setting is_available to false
+      const result = await pool.query(
+        `
+        UPDATE products
+        SET is_available = false
+        WHERE product_id = $1
+        RETURNING product_id, product_name
+        `,
+        [productId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      console.log("[Server] Product deleted:", result.rows[0].product_name);
+      res.json({
+        success: true,
+        message: "Product deleted successfully",
+        data: result.rows[0],
+      });
+    } catch (error) {
+      console.error("[Server] Error deleting product:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete product",
+        error: error.message,
+      });
+    }
+  });
+
   // GET products by category
   router.get("/:category", async (req, res) => {
     const { category } = req.params;
