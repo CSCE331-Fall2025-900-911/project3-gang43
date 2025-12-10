@@ -163,11 +163,72 @@ export default function createProductsRouter(pool) {
       });
     }
   });
+  // GET all inventory items
+  router.get("/inventory", async (req, res) => {
+    console.log("[Server] GET /api/products/inventory");
+    try {
+      const result = await pool.query(`
+        SELECT inventory_id, item_name, quantity, unit, reorder_level
+        FROM inventory
+        ORDER BY item_name
+      `);
+
+      res.json({
+        success: true,
+        data: result.rows,
+      });
+    } catch (error) {
+      console.error("[Server] Error fetching inventory:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch inventory",
+        error: error.message,
+      });
+    }
+  });
+
+  // GET ingredients for a specific product
+  router.get("/:productId/ingredients", async (req, res) => {
+    console.log("[Server] GET /api/products/:productId/ingredients");
+    try {
+      const { productId } = req.params;
+
+      const result = await pool.query(`
+        SELECT
+          pi.product_ingredient_id,
+          pi.inventory_id,
+          i.item_name,
+          pi.quantity_needed,
+          i.unit
+        FROM product_ingredients pi
+        JOIN inventory i ON pi.inventory_id = i.inventory_id
+        WHERE pi.product_id = $1
+        ORDER BY i.item_name
+      `, [productId]);
+
+      res.json({
+        success: true,
+        data: result.rows,
+      });
+    } catch (error) {
+      console.error("[Server] Error fetching product ingredients:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch product ingredients",
+        error: error.message,
+      });
+    }
+  });
+
   // POST create new product
   router.post("/", async (req, res) => {
     console.log("[Server] POST /api/products");
+    const client = await pool.connect();
+
     try {
-      const { product_name, category, size, price, icon, color, description } = req.body;
+      await client.query('BEGIN');
+
+      const { product_name, category, size, price, icon, color, description, ingredients } = req.body;
 
       if (!product_name || !category || !price) {
         return res.status(400).json({
@@ -176,7 +237,7 @@ export default function createProductsRouter(pool) {
         });
       }
 
-      const result = await pool.query(
+      const result = await client.query(
         `
         INSERT INTO products (product_name, category, size, price, is_available, icon, color, description)
         VALUES ($1, $2, $3, $4, true, $5, $6, $7)
@@ -185,18 +246,117 @@ export default function createProductsRouter(pool) {
         [product_name, category, size || 'Medium', price, icon || '🥤', color || '#3b82f6', description || '']
       );
 
+      const productId = result.rows[0].product_id;
+
+      // Add ingredients if provided
+      if (ingredients && Array.isArray(ingredients) && ingredients.length > 0) {
+        for (const ingredient of ingredients) {
+          if (ingredient.inventory_id && ingredient.quantity_needed > 0) {
+            await client.query(
+              `
+              INSERT INTO product_ingredients (product_id, inventory_id, quantity_needed)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (product_id, inventory_id) DO UPDATE
+              SET quantity_needed = $3
+              `,
+              [productId, ingredient.inventory_id, ingredient.quantity_needed]
+            );
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+
       console.log("[Server] Product created with ID:", result.rows[0].product_id);
       res.json({
         success: true,
         data: result.rows[0],
       });
     } catch (error) {
+      await client.query('ROLLBACK');
       console.error("[Server] Error creating product:", error);
       res.status(500).json({
         success: false,
         message: "Failed to create product",
         error: error.message,
       });
+    } finally {
+      client.release();
+    }
+  });
+
+  // PUT update product
+  router.put("/:productId", async (req, res) => {
+    console.log("[Server] PUT /api/products/:productId");
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const { productId } = req.params;
+      const { product_name, category, size, price, icon, color, description, ingredients } = req.body;
+
+      if (!product_name || !category || !price) {
+        return res.status(400).json({
+          success: false,
+          message: "Product name, category, and price are required",
+        });
+      }
+
+      const result = await client.query(
+        `
+        UPDATE products
+        SET product_name = $1, category = $2, size = $3, price = $4, icon = $5, color = $6, description = $7, updated_at = CURRENT_TIMESTAMP
+        WHERE product_id = $8
+        RETURNING product_id, product_name, category, size, price, is_available, icon, color, description
+        `,
+        [product_name, category, size || 'Medium', price, icon || '🥤', color || '#3b82f6', description || '', productId]
+      );
+
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      // Update ingredients if provided
+      if (ingredients && Array.isArray(ingredients)) {
+        // Delete existing ingredients
+        await client.query('DELETE FROM product_ingredients WHERE product_id = $1', [productId]);
+
+        // Add new ingredients
+        for (const ingredient of ingredients) {
+          if (ingredient.inventory_id && ingredient.quantity_needed > 0) {
+            await client.query(
+              `
+              INSERT INTO product_ingredients (product_id, inventory_id, quantity_needed)
+              VALUES ($1, $2, $3)
+              `,
+              [productId, ingredient.inventory_id, ingredient.quantity_needed]
+            );
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+
+      console.log("[Server] Product updated with ID:", result.rows[0].product_id);
+      res.json({
+        success: true,
+        data: result.rows[0],
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error("[Server] Error updating product:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update product",
+        error: error.message,
+      });
+    } finally {
+      client.release();
     }
   });
 

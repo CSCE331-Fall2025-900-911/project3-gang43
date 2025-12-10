@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker, PlusCircle, Edit } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
-import { getAllProducts, getCategories, checkoutOrder, createProduct, deleteProduct } from '../services/routes.js';
+import { getAllProducts, getCategories, checkoutOrder, createProduct, updateProduct, deleteProduct, getInventory, getProductIngredients } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
 import VoiceControlPanel from "./VoiceControlPanel";
@@ -28,7 +28,11 @@ const CashierView = () => {
   const [commandFeedback, setCommandFeedback] = useState(null);
   const [lastCommand, setLastCommand] = useState('');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
   const [showManageMode, setShowManageMode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [newProduct, setNewProduct] = useState({
     product_name: '',
     category: '',
@@ -60,9 +64,12 @@ const CashierView = () => {
       try {
         setLoading(true);
         setError(null);
-        
-        const categoriesResponse = await getCategories();
-        const productsResponse = await getAllProducts();
+
+        const [categoriesResponse, productsResponse, inventoryResponse] = await Promise.all([
+          getCategories(),
+          getAllProducts(),
+          getInventory()
+        ]);
 
         if (categoriesResponse.success) {
           setCategories(categoriesResponse.data);
@@ -73,6 +80,10 @@ const CashierView = () => {
 
         if (productsResponse.success) {
           setProducts(productsResponse.data);
+        }
+
+        if (inventoryResponse.success) {
+          setInventory(inventoryResponse.data);
         }
       } catch (err) {
         setError('Failed to load products. Please refresh the page.');
@@ -393,7 +404,8 @@ const CashierView = () => {
     try {
       const response = await createProduct({
         ...newProduct,
-        price: parseFloat(newProduct.price)
+        price: parseFloat(newProduct.price),
+        ingredients: selectedIngredients
       });
 
       if (response.success) {
@@ -411,6 +423,7 @@ const CashierView = () => {
           icon: '🥤',
           description: ''
         });
+        setSelectedIngredients([]);
         setShowAddProductModal(false);
         alert('Product added successfully!');
       }
@@ -418,6 +431,90 @@ const CashierView = () => {
       console.error('Error adding product:', error);
       alert('Failed to add product. Please try again.');
     }
+  };
+
+  const handleEditProduct = async (product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      product_name: product.product_name,
+      category: product.category,
+      price: product.price.toString(),
+      icon: product.icon || '🥤',
+      description: product.description || ''
+    });
+
+    // Fetch ingredients for this product
+    try {
+      const response = await getProductIngredients(product.product_id);
+      if (response.success) {
+        setSelectedIngredients(response.data.map(ing => ({
+          inventory_id: ing.inventory_id,
+          quantity_needed: ing.quantity_needed
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching product ingredients:', error);
+      setSelectedIngredients([]);
+    }
+
+    setShowEditProductModal(true);
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!newProduct.product_name || !newProduct.category || !newProduct.price) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await updateProduct(editingProduct.product_id, {
+        ...newProduct,
+        price: parseFloat(newProduct.price),
+        ingredients: selectedIngredients
+      });
+
+      if (response.success) {
+        // Refresh products list
+        const productsResponse = await getAllProducts();
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+
+        // Reset form and close modal
+        setNewProduct({
+          product_name: '',
+          category: '',
+          price: '',
+          icon: '🥤',
+          description: ''
+        });
+        setSelectedIngredients([]);
+        setEditingProduct(null);
+        setShowEditProductModal(false);
+        alert('Product updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
+    }
+  };
+
+  const toggleIngredient = (inventoryId) => {
+    setSelectedIngredients(prev => {
+      const exists = prev.find(ing => ing.inventory_id === inventoryId);
+      if (exists) {
+        return prev.filter(ing => ing.inventory_id !== inventoryId);
+      }
+      return [...prev, { inventory_id: inventoryId, quantity_needed: 1 }];
+    });
+  };
+
+  const updateIngredientQuantity = (inventoryId, quantity) => {
+    setSelectedIngredients(prev => prev.map(ing =>
+      ing.inventory_id === inventoryId
+        ? { ...ing, quantity_needed: parseFloat(quantity) || 0 }
+        : ing
+    ));
   };
 
   const handleDeleteProduct = async (productId, productName) => {
@@ -800,36 +897,68 @@ const CashierView = () => {
                       </div>
                     </button>
                     {showManageMode && (
-                      <button
-                        onClick={() => handleDeleteProduct(item.product_id, item.product_name)}
-                        style={{
-                          position: "absolute",
-                          top: "8px",
-                          right: "8px",
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "50%",
-                          border: "none",
-                          background: "#ef4444",
-                          color: "white",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                          transition: "all 0.2s"
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#dc2626";
-                          e.currentTarget.style.transform = "scale(1.1)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "#ef4444";
-                          e.currentTarget.style.transform = "scale(1)";
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleEditProduct(item)}
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "48px",
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            border: "none",
+                            background: "#3b82f6",
+                            color: "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#2563eb";
+                            e.currentTarget.style.transform = "scale(1.1)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#3b82f6";
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(item.product_id, item.product_name)}
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            border: "none",
+                            background: "#ef4444",
+                            color: "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#dc2626";
+                            e.currentTarget.style.transform = "scale(1.1)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#ef4444";
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
                     )}
                   </div>
                 ))
@@ -1555,9 +1684,96 @@ const CashierView = () => {
                 />
               </div>
 
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Ingredients (Inventory Items)
+                </label>
+                <div style={{
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  background: theme.bg
+                }}>
+                  {inventory.length === 0 ? (
+                    <div style={{ textAlign: "center", color: theme.textMuted, padding: "1rem" }}>
+                      No inventory items available
+                    </div>
+                  ) : (
+                    inventory.map((inv) => {
+                      const selected = selectedIngredients.find(ing => ing.inventory_id === inv.inventory_id);
+                      return (
+                        <div
+                          key={inv.inventory_id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                            padding: "0.75rem",
+                            marginBottom: "0.5rem",
+                            border: `1px solid ${selected ? "#3b82f6" : theme.border}`,
+                            borderRadius: "8px",
+                            background: selected ? (darkMode ? "rgba(59, 130, 246, 0.1)" : "#eff6ff") : "transparent"
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selected}
+                            onChange={() => toggleIngredient(inv.inventory_id)}
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              cursor: "pointer"
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: "0.875rem", fontWeight: "600", color: theme.text }}>
+                              {inv.item_name}
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: theme.textMuted }}>
+                              Available: {inv.quantity} {inv.unit}
+                            </div>
+                          </div>
+                          {selected && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={selected.quantity_needed}
+                                onChange={(e) => updateIngredientQuantity(inv.inventory_id, e.target.value)}
+                                style={{
+                                  width: "80px",
+                                  padding: "0.5rem",
+                                  borderRadius: "4px",
+                                  border: `1px solid ${theme.border}`,
+                                  background: theme.card,
+                                  color: theme.text,
+                                  fontSize: "0.875rem"
+                                }}
+                              />
+                              <span style={{ fontSize: "0.75rem", color: theme.textMuted }}>
+                                {inv.unit}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: theme.textMuted, marginTop: "0.5rem" }}>
+                  Select ingredients and specify how much is needed per drink
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "0.75rem" }}>
                 <button
-                  onClick={() => setShowAddProductModal(false)}
+                  onClick={() => {
+                    setShowAddProductModal(false);
+                    setSelectedIngredients([]);
+                  }}
                   style={{
                     flex: 1,
                     padding: "0.75rem",
@@ -1587,6 +1803,299 @@ const CashierView = () => {
                   }}
                 >
                   Add Drink
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {showEditProductModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2000,
+          padding: "1rem"
+        }}>
+          <div style={{
+            backgroundColor: theme.card,
+            borderRadius: "16px",
+            maxWidth: "500px",
+            width: "100%",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            border: `1px solid ${theme.border}`,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+          }}>
+            <div style={{
+              padding: "1.5rem",
+              borderBottom: `1px solid ${theme.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, margin: 0 }}>
+                Edit Drink
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditProductModal(false);
+                  setEditingProduct(null);
+                  setSelectedIngredients([]);
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: theme.textMuted,
+                  cursor: "pointer",
+                  padding: "0.5rem"
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ padding: "1.5rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.product_name}
+                  onChange={(e) => setNewProduct({ ...newProduct, product_name: e.target.value })}
+                  placeholder="e.g., Classic Milk Tea"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Category *
+                </label>
+                <select
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                >
+                  <option value="">Select category...</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Price *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                  placeholder="e.g., 5.50"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Icon (Emoji)
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.icon}
+                  onChange={(e) => setNewProduct({ ...newProduct, icon: e.target.value })}
+                  placeholder="🥤"
+                  maxLength="2"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "2rem",
+                    textAlign: "center"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Description
+                </label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  placeholder="e.g., Rich and creamy milk tea"
+                  rows="3"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: theme.bg,
+                    color: theme.text,
+                    fontSize: "1rem",
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: theme.text, marginBottom: "0.5rem" }}>
+                  Ingredients (Inventory Items)
+                </label>
+                <div style={{
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  background: theme.bg
+                }}>
+                  {inventory.length === 0 ? (
+                    <div style={{ textAlign: "center", color: theme.textMuted, padding: "1rem" }}>
+                      No inventory items available
+                    </div>
+                  ) : (
+                    inventory.map((inv) => {
+                      const selected = selectedIngredients.find(ing => ing.inventory_id === inv.inventory_id);
+                      return (
+                        <div
+                          key={inv.inventory_id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                            padding: "0.75rem",
+                            marginBottom: "0.5rem",
+                            border: `1px solid ${selected ? "#3b82f6" : theme.border}`,
+                            borderRadius: "8px",
+                            background: selected ? (darkMode ? "rgba(59, 130, 246, 0.1)" : "#eff6ff") : "transparent"
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selected}
+                            onChange={() => toggleIngredient(inv.inventory_id)}
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              cursor: "pointer"
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: "0.875rem", fontWeight: "600", color: theme.text }}>
+                              {inv.item_name}
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: theme.textMuted }}>
+                              Available: {inv.quantity} {inv.unit}
+                            </div>
+                          </div>
+                          {selected && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={selected.quantity_needed}
+                                onChange={(e) => updateIngredientQuantity(inv.inventory_id, e.target.value)}
+                                style={{
+                                  width: "80px",
+                                  padding: "0.5rem",
+                                  borderRadius: "4px",
+                                  border: `1px solid ${theme.border}`,
+                                  background: theme.card,
+                                  color: theme.text,
+                                  fontSize: "0.875rem"
+                                }}
+                              />
+                              <span style={{ fontSize: "0.75rem", color: theme.textMuted }}>
+                                {inv.unit}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: theme.textMuted, marginTop: "0.5rem" }}>
+                  Select ingredients and specify how much is needed per drink
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  onClick={() => {
+                    setShowEditProductModal(false);
+                    setEditingProduct(null);
+                    setSelectedIngredients([]);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.border}`,
+                    background: "transparent",
+                    color: theme.text,
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateProduct}
+                  style={{
+                    flex: 1,
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "white",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  Update Drink
                 </button>
               </div>
             </div>
