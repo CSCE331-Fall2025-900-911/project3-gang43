@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
 import VoiceControlPanel from "./VoiceControlPanel";
 import useVoiceControl from "../hooks/useVoiceControl";
+import useTextToSpeech from "../hooks/useTextToSpeech";
 
 
 const CustomerKiosk = () => {
@@ -333,6 +334,47 @@ const CustomerKiosk = () => {
     enabled: false
   });
 
+  const { speak, cancel, isSpeaking } = useTextToSpeech();
+
+  const speakCustomization = useCallback(() => {
+    if (!customizingItem) return;
+
+    const toppingsText = selectedToppings.length > 0
+      ? `with ${selectedToppings.map(t => t.name).join(', ')}`
+      : 'with no toppings';
+
+    const text = `Customizing ${customizingItem.product_name}. Size: ${drinkSize}. Sugar level: ${sugarLevel}. Ice level: ${iceLevel}. ${toppingsText}. Total price: $${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}`;
+
+    speak(text);
+  }, [customizingItem, drinkSize, sugarLevel, iceLevel, selectedToppings, speak]);
+
+  const speakCartSummary = useCallback(() => {
+    if (cart.length === 0) {
+      speak('Your cart is empty.');
+      return;
+    }
+
+    let text = `You have ${cart.length} item${cart.length > 1 ? 's' : ''} in your cart. `;
+
+    cart.forEach((item, index) => {
+      text += `Item ${index + 1}: ${item.quantity} ${item.name || item.product_name}`;
+      if (item.customizations) {
+        text += `, ${item.customizations.size} size, ${item.customizations.sugar} sugar, ${item.customizations.ice}`;
+      }
+      text += `. `;
+    });
+
+    text += `Subtotal: $${getSubtotal().toFixed(2)}. `;
+
+    if (discountPercent > 0) {
+      text += `Discount: ${discountPercent}% off, saving $${getDiscountAmount().toFixed(2)}. `;
+    }
+
+    text += `Tax: $${getTax().toFixed(2)}. Total: $${getTotal().toFixed(2)}.`;
+
+    speak(text);
+  }, [cart, discountPercent, getSubtotal, getDiscountAmount, getTax, getTotal, speak]);
+
   const theme = highContrast ? {
     bg: "#000000",
     card: "#1a1a1a",
@@ -651,24 +693,52 @@ const CustomerKiosk = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
-              {cart.length > 0 && (
-                <button
-                  onClick={clearCart}
-                  style={{
-                    padding: "0.5rem",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: "transparent",
-                    color: "#ef4444",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                >
-                  <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                </button>
-              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {cart.length > 0 && (
+                  <button
+                    onClick={speakCartSummary}
+                    style={{
+                      padding: "0.5rem",
+                      borderRadius: "8px",
+                      border: `1px solid ${theme.border}`,
+                      backgroundColor: isSpeaking ? "#3b82f6" : "transparent",
+                      color: isSpeaking ? "white" : theme.text,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSpeaking) e.currentTarget.style.backgroundColor = theme.hover;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSpeaking) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                    title="Read order summary aloud"
+                  >
+                    <Speaker style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                  </button>
+                )}
+                {cart.length > 0 && (
+                  <button
+                    onClick={clearCart}
+                    style={{
+                      padding: "0.5rem",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{
@@ -992,18 +1062,41 @@ const CustomerKiosk = () => {
                   <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setCustomizingItem(null)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: theme.textMuted,
-                  cursor: "pointer",
-                  padding: "0.5rem"
-                }}
-              >
-                <X size={24} />
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={speakCustomization}
+                  style={{
+                    background: isSpeaking ? "#3b82f6" : "transparent",
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: "8px",
+                    color: isSpeaking ? "white" : theme.text,
+                    cursor: "pointer",
+                    padding: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s"
+                  }}
+                  title="Read customization aloud"
+                >
+                  <Speaker size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    cancel();
+                    setCustomizingItem(null);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: theme.textMuted,
+                    cursor: "pointer",
+                    padding: "0.5rem"
+                  }}
+                >
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
             <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
