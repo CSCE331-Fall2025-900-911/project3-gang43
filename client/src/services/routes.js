@@ -105,6 +105,33 @@ export async function createProduct(productData) {
   }
 }
 
+export async function updateProduct(productId, productData) {
+  try {
+    const url = `${API_URL}/products/${productId}`;
+    console.log('[API] Updating product:', productId);
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(productData),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API] Update product error:', errorText);
+      throw new Error(`HTTP ${res.status}: Failed to update product`);
+    }
+
+    const data = await res.json();
+    console.log('[API] Product updated:', data.data);
+    return data;
+  } catch (error) {
+    console.error('[API] Error updating product:', error.message, error);
+    throw error;
+  }
+}
+
 export async function deleteProduct(productId) {
   try {
     const url = `${API_URL}/products/${productId}`;
@@ -124,6 +151,48 @@ export async function deleteProduct(productId) {
     return data;
   } catch (error) {
     console.error('[API] Error deleting product:', error.message, error);
+    throw error;
+  }
+}
+
+export async function getInventory() {
+  try {
+    const url = `${API_URL}/products/inventory`;
+    console.log('[API] Fetching inventory from:', url);
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API] Inventory error:', errorText);
+      throw new Error(`HTTP ${res.status}: Failed to fetch inventory`);
+    }
+
+    const data = await res.json();
+    console.log('[API] Inventory received:', data.data?.length || 0, 'items');
+    return data;
+  } catch (error) {
+    console.error('[API] Error fetching inventory:', error.message, error);
+    throw error;
+  }
+}
+
+export async function getProductIngredients(productId) {
+  try {
+    const url = `${API_URL}/products/${productId}/ingredients`;
+    console.log('[API] Fetching ingredients for product:', productId);
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[API] Product ingredients error:', errorText);
+      throw new Error(`HTTP ${res.status}: Failed to fetch product ingredients`);
+    }
+
+    const data = await res.json();
+    console.log('[API] Product ingredients received:', data.data?.length || 0, 'items');
+    return data;
+  } catch (error) {
+    console.error('[API] Error fetching product ingredients:', error.message, error);
     throw error;
   }
 }

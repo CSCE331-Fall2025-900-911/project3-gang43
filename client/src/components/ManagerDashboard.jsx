@@ -29,6 +29,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Menu,
+  Edit2, 
+  Save,  
+  X,     
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
@@ -59,10 +62,20 @@ const ManagerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [weeklyRevenue, setWeeklyRevenue] = useState([]);
   const [topItems, setTopItems] = useState([]);
+  
+  // Employee State
   const [employees, setEmployees] = useState([]);
   const [newEmployee, setNewEmployee] = useState({
     employee_name: "",
     role: "",
+  });
+
+  // --- UPDATED: State for Editing Employees now includes active ---
+  const [editingEmployee, setEditingEmployee] = useState(null); 
+  const [updatedEmployee, setUpdatedEmployee] = useState({
+    employee_name: "",
+    role: "",
+    active: true // Default to true to prevent null errors
   });
 
   const openReorderModal = (item) => {
@@ -173,13 +186,6 @@ const ManagerDashboard = () => {
           axios.get("/api/products/employees"),
         ]);
 
-        console.log("Products data:", productsRes.data);
-        console.log("Orders history:", ordersHistoryRes.data);
-        console.log("Inventory data:", inventoryRes.data);
-        console.log("Dashboard stats:", statsRes.data);
-        console.log("Recent orders:", recentOrdersRes.data);
-        console.log("Employees :", employeesRes.data);
-
         setProducts(productsRes.data.data || []);
         setOrderHistory(ordersHistoryRes.data.data || []);
         // Handle both array and object with data property
@@ -229,7 +235,6 @@ const ManagerDashboard = () => {
         "/api/products/reports/z-report-pdf",
         null,
         {
-          // if you want to pass a request body use { data: {...} }
           responseType: "blob",
         }
       );
@@ -251,20 +256,10 @@ const ManagerDashboard = () => {
     const lowStockItems = inventoryData.filter((item) => {
       const quantity = parseFloat(item.quantity);
       const reorderLevel = parseFloat(item.reorder_level);
-
-      // Check if quantity is a valid number and if it's less than or equal to reorder level
-      // If reorder_level is not present, consider the item as low stock
       const isLowStock =
         !isNaN(quantity) && (isNaN(reorderLevel) || quantity <= reorderLevel);
-
-      console.log(
-        `Item: ${item.item_name}, Quantity: ${quantity}, Reorder Level: ${reorderLevel}, Is Low Stock: ${isLowStock}`
-      );
-
       return isLowStock;
     });
-
-    console.log("Low stock items:", lowStockItems);
     return lowStockItems;
   };
 
@@ -324,6 +319,8 @@ const ManagerDashboard = () => {
     ],
   };
 
+  // --- EMPLOYEE HANDLERS ---
+
   const handleAddEmployee = async () => {
     if (!newEmployee.employee_name.trim() || !newEmployee.role.trim()) {
       alert("Please fill out all fields");
@@ -335,8 +332,6 @@ const ManagerDashboard = () => {
 
       if (res.data.success) {
         setEmployees([...employees, res.data.data]);
-
-        // Reset form
         setNewEmployee({ employee_name: "", role: "" });
       }
     } catch (err) {
@@ -361,10 +356,53 @@ const ManagerDashboard = () => {
     }
   };
 
+  // --- UPDATED: Edit Employee Handlers (Fixes NULL error) ---
+
+  const handleEditClick = (employee) => {
+    setEditingEmployee(employee.employee_id);
+    // Important: We must preserve the existing 'active' status
+    setUpdatedEmployee({
+      employee_name: employee.employee_name,
+      role: employee.role,
+      active: employee.active !== undefined ? employee.active : true // Fallback to true if missing
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEmployee(null);
+    setUpdatedEmployee({ employee_name: "", role: "", active: true });
+  };
+
+  const handleUpdateEmployee = async (id) => {
+    if (!updatedEmployee.employee_name.trim() || !updatedEmployee.role.trim()) {
+      alert("Please fill out all fields");
+      return;
+    }
+
+    try {
+      // API call to update employee
+      const res = await axios.put(`/api/products/employees/${id}`, updatedEmployee);
+
+      if (res.data.success) {
+        // Update local state
+        setEmployees(
+          employees.map((emp) =>
+            emp.employee_id === id ? { ...emp, ...updatedEmployee } : emp
+          )
+        );
+        setEditingEmployee(null);
+        alert("Employee updated successfully!");
+      }
+    } catch (err) {
+      console.error("Error updating employee:", err);
+      alert("Failed to update employee.");
+    }
+  };
+
+  // Removed "Staff" from the sidebar items
   const sidebarItems = [
     { name: "Analytics", icon: LayoutDashboard },
     { name: "Inventory", icon: Package },
-    { name: "Staff", icon: Users },
   ];
 
   // Loading state

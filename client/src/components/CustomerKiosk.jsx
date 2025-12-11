@@ -1,12 +1,18 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X } from "lucide-react";
+import { 
+  ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, 
+  Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker, 
+  Banknote, Smartphone, ChevronLeft 
+} from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
 import WeatherWidget from "./WeatherWidget";
 import VoiceControlPanel from "./VoiceControlPanel";
 import useVoiceControl from "../hooks/useVoiceControl";
+import useTextToSpeech from "../hooks/useTextToSpeech";
 
 
 const CustomerKiosk = () => {
@@ -22,10 +28,15 @@ const CustomerKiosk = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
   const [commandFeedback, setCommandFeedback] = useState(null);
   const [lastCommand, setLastCommand] = useState('');
+
+  // --- NEW: Notification & Checkout State ---
+  const [notification, setNotification] = useState(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  // ------------------------------------------
 
   const {
     discountPercent,
@@ -44,6 +55,13 @@ const CustomerKiosk = () => {
   .map(word => word[0])
   .join('')
   .toUpperCase();
+
+  // --- NEW: Helper to trigger notifications ---
+  const triggerNotification = (type, text) => {
+    setNotification({ type, text });
+    setTimeout(() => setNotification(null), 3000); // Hide after 3 seconds
+  };
+  // -------------------------------------------
 
   useEffect(() => {
     const fetchData = async () => {
@@ -156,10 +174,13 @@ const CustomerKiosk = () => {
     }
 
     setCustomizingItem(null);
+    // NEW: Notify user
+    triggerNotification('success', `Added ${item.product_name || item.name} to cart`);
   };
 
   const removeFromCart = (cartId) => {
     setCart(cart.filter((item) => item.cartId !== cartId));
+    triggerNotification('info', 'Item removed');
   };
 
   const updateQuantity = (cartId, delta) => {
@@ -172,7 +193,10 @@ const CustomerKiosk = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    triggerNotification('info', 'Cart cleared');
+  };
 
   const getSubtotal = () => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
   const getDiscountAmount = () => {
@@ -203,14 +227,14 @@ const CustomerKiosk = () => {
 
   const fontMultiplier = getFontSizeMultiplier();
 
-  const handleCheckout = async () => {
+  // --- MODIFIED: Renamed to submitOrder and updated to close modal on success ---
+  const submitOrder = async () => {
     if (cart.length === 0) {
-      setCheckoutMessage({ type: 'error', text: 'Cart is empty' });
+      triggerNotification('error', 'Cart is empty');
       return;
     }
 
     setIsProcessing(true);
-    setCheckoutMessage(null);
     setInventoryWarnings([]);
 
     try {
@@ -234,23 +258,15 @@ const CustomerKiosk = () => {
 
       if (response.success) {
         setInventoryWarnings(response.data.warnings || []);
-        setCheckoutMessage({
-          type: 'success',
-          text: `Order #${response.data.orderId} processed successfully!`,
-        });
+        // Success actions
+        triggerNotification('success', `Order #${response.data.orderId} submitted successfully!`);
         setCart([]);
-        setTimeout(() => setCheckoutMessage(null), 3000);
+        setIsCheckoutOpen(false); // Close the modal
       } else {
-        setCheckoutMessage({
-          type: 'error',
-          text: response.message || 'Failed to process order',
-        });
+        triggerNotification('error', response.message || 'Failed to process order');
       }
     } catch (error) {
-      setCheckoutMessage({
-        type: 'error',
-        text: 'Error processing order. Please try again.',
-      });
+      triggerNotification('error', 'Error processing order. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -263,14 +279,13 @@ const CustomerKiosk = () => {
     // Clear cart command
     if (lowerCommand.includes('clear cart') || lowerCommand.includes('empty cart')) {
       clearCart();
-      setCommandFeedback({ success: true, message: 'Cart cleared' });
       return;
     }
 
     // Checkout command
     if (lowerCommand.includes('checkout') || lowerCommand.includes('place order') || lowerCommand.includes('complete order')) {
-      handleCheckout();
-      setCommandFeedback({ success: true, message: 'Processing checkout...' });
+      if(cart.length > 0) setIsCheckoutOpen(true);
+      else triggerNotification('error', 'Cart is empty');
       return;
     }
 
@@ -301,7 +316,6 @@ const CustomerKiosk = () => {
 
       if (foundProduct) {
         addToCart(foundProduct);
-        setCommandFeedback({ success: true, message: `Added ${foundProduct.product_name} to cart` });
       } else {
         setCommandFeedback({ success: false, message: 'Product not found. Please try again.' });
       }
@@ -318,7 +332,6 @@ const CustomerKiosk = () => {
 
       if (foundCartItem) {
         removeFromCart(foundCartItem.cartId);
-        setCommandFeedback({ success: true, message: `Removed ${foundCartItem.name || foundCartItem.product_name} from cart` });
       } else {
         setCommandFeedback({ success: false, message: 'Item not found in cart' });
       }
@@ -332,6 +345,47 @@ const CustomerKiosk = () => {
     onCommand: handleVoiceCommand,
     enabled: false
   });
+
+  const { speak, cancel, isSpeaking } = useTextToSpeech();
+
+  const speakCustomization = useCallback(() => {
+    if (!customizingItem) return;
+
+    const toppingsText = selectedToppings.length > 0
+      ? `with ${selectedToppings.map(t => t.name).join(', ')}`
+      : 'with no toppings';
+
+    const text = `Customizing ${customizingItem.product_name}. Size: ${drinkSize}. Sugar level: ${sugarLevel}. Ice level: ${iceLevel}. ${toppingsText}. Total price: $${(Number(customizingItem?.price || 0) + (drinkSize === "Small" ? -0.50 : drinkSize === "Large" ? 0.75 : 0) + selectedToppings.reduce((sum, t) => sum + Number(t.price || 0), 0)).toFixed(2)}`;
+
+    speak(text);
+  }, [customizingItem, drinkSize, sugarLevel, iceLevel, selectedToppings, speak]);
+
+  const speakCartSummary = useCallback(() => {
+    if (cart.length === 0) {
+      speak('Your cart is empty.');
+      return;
+    }
+
+    let text = `You have ${cart.length} item${cart.length > 1 ? 's' : ''} in your cart. `;
+
+    cart.forEach((item, index) => {
+      text += `Item ${index + 1}: ${item.quantity} ${item.name || item.product_name}`;
+      if (item.customizations) {
+        text += `, ${item.customizations.size} size, ${item.customizations.sugar} sugar, ${item.customizations.ice}`;
+      }
+      text += `. `;
+    });
+
+    text += `Subtotal: $${getSubtotal().toFixed(2)}. `;
+
+    if (discountPercent > 0) {
+      text += `Discount: ${discountPercent}% off, saving $${getDiscountAmount().toFixed(2)}. `;
+    }
+
+    text += `Tax: $${getTax().toFixed(2)}. Total: $${getTotal().toFixed(2)}.`;
+
+    speak(text);
+  }, [cart, discountPercent, getSubtotal, getDiscountAmount, getTax, getTotal, speak]);
 
   const theme = highContrast ? {
     bg: "#000000",
@@ -353,6 +407,31 @@ const CustomerKiosk = () => {
 
   return (
     <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
+      
+      {/* --- NEW: Global Notification Toast --- */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          backgroundColor: notification.type === 'success' ? '#10b981' : notification.type === 'error' ? '#ef4444' : '#3b82f6',
+          color: 'white',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          <style>{`@keyframes slideDown { from { transform: translate(-50%, -100%); } to { transform: translate(-50%, 0); } }`}</style>
+          {notification.type === 'success' ? <Check size={24} /> : notification.type === 'error' ? <AlertCircle size={24} /> : <AlertCircle size={24} />}
+          <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{notification.text}</span>
+        </div>
+      )}
+
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -651,24 +730,52 @@ const CustomerKiosk = () => {
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <h2 style={{ fontSize: `${1.125 * fontMultiplier}rem`, fontWeight: "bold", color: theme.text, margin: 0 }}>Current Order</h2>
-              {cart.length > 0 && (
-                <button
-                  onClick={clearCart}
-                  style={{
-                    padding: "0.5rem",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: "transparent",
-                    color: "#ef4444",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                >
-                  <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                </button>
-              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {cart.length > 0 && (
+                  <button
+                    onClick={speakCartSummary}
+                    style={{
+                      padding: "0.5rem",
+                      borderRadius: "8px",
+                      border: `1px solid ${theme.border}`,
+                      backgroundColor: isSpeaking ? "#3b82f6" : "transparent",
+                      color: isSpeaking ? "white" : theme.text,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSpeaking) e.currentTarget.style.backgroundColor = theme.hover;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSpeaking) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                    title="Read order summary aloud"
+                  >
+                    <Speaker style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                  </button>
+                )}
+                {cart.length > 0 && (
+                  <button
+                    onClick={clearCart}
+                    style={{
+                      padding: "0.5rem",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: "transparent",
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <Trash2 style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{
@@ -845,23 +952,6 @@ const CustomerKiosk = () => {
                   </div>
                 </div>
 
-                {checkoutMessage && (
-                  <div style={{
-                    padding: `${0.75 * fontMultiplier}rem`,
-                    borderRadius: "10px",
-                    marginBottom: "1rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    backgroundColor: checkoutMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
-                    color: checkoutMessage.type === 'success' ? '#166534' : '#991b1b',
-                    border: `1px solid ${checkoutMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-                  }}>
-                    <AlertCircle style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem` }}>{checkoutMessage.text}</span>
-                  </div>
-                )}
-
                 {inventoryWarnings.length > 0 && (
                   <div style={{
                     padding: `${0.75 * fontMultiplier}rem`,
@@ -881,8 +971,9 @@ const CustomerKiosk = () => {
                   </div>
                 )}
 
+                {/* MODIFIED: Opens the Checkout Modal instead of direct submit */}
                 <button
-                  onClick={handleCheckout}
+                  onClick={() => setIsCheckoutOpen(true)}
                   disabled={isProcessing}
                   style={{
                     width: "100%",
@@ -918,38 +1009,114 @@ const CustomerKiosk = () => {
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                   {isProcessing ? "Processing..." : "Process Payment"}
                 </button>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
-                  <button style={{
-                    padding: `${0.625 * fontMultiplier}rem`,
-                    borderRadius: "8px",
-                    border: `1px solid ${theme.border}`,
-                    backgroundColor: theme.card,
-                    color: theme.text,
-                    fontSize: `${0.875 * fontMultiplier}rem`,
-                    fontWeight: "500",
-                    cursor: "pointer"
-                  }}>
-                    Hold
-                  </button>
-                  <button style={{
-                    padding: `${0.625 * fontMultiplier}rem`,
-                    borderRadius: "8px",
-                    border: "1px solid #fecaca",
-                    backgroundColor: "#fee2e2",
-                    color: "#dc2626",
-                    fontSize: `${0.875 * fontMultiplier}rem`,
-                    fontWeight: "500",
-                    cursor: "pointer"
-                  }}>
-                    Void
-                  </button>
-                </div>
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* --- NEW: Checkout/Review Modal --- */}
+      {isCheckoutOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000
+        }}>
+          <div style={{
+            backgroundColor: theme.card, width: "90%", maxWidth: "900px", height: "80vh",
+            borderRadius: "16px", display: "grid", gridTemplateColumns: "1.5fr 1fr", overflow: "hidden", border: `1px solid ${theme.border}`
+          }}>
+            {/* Left Side: Order Summary */}
+            <div style={{ padding: "2rem", borderRight: `1px solid ${theme.border}`, overflowY: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+                <button onClick={() => setIsCheckoutOpen(false)} style={{ background: "transparent", border: "none", color: theme.textMuted, cursor: "pointer" }}>
+                  <ChevronLeft size={24} />
+                </button>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: theme.text, margin: 0 }}>Review Order</h2>
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {cart.map((item, idx) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "1rem", borderBottom: `1px solid ${theme.border}` }}>
+                     <div>
+                       <div style={{ fontWeight: "600", color: theme.text, fontSize: "1.1rem" }}>{item.quantity}x {item.product_name}</div>
+                       {item.customizations && (
+                         <div style={{ color: theme.textMuted, fontSize: "0.9rem", marginTop: "4px" }}>
+                           {item.customizations.size} • {item.customizations.sugar} Sugar • {item.customizations.ice}
+                           {item.customizations.toppings.length > 0 && <br />}
+                           {item.customizations.toppings.length > 0 && `+ ${item.customizations.toppings.map(t => t.name).join(", ")}`}
+                         </div>
+                       )}
+                     </div>
+                     <div style={{ fontWeight: "bold", color: theme.text }}>${(item.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Side: Payment & Total */}
+            <div style={{ padding: "2rem", backgroundColor: darkMode ? "#0f172a" : "#f8fafc", display: "flex", flexDirection: "column" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, marginBottom: "1.5rem" }}>Payment Method</h3>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "auto" }}>
+                {[
+                  { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard size={24} /> },
+                  { id: 'wallet', name: 'Digital Wallet (Apple/Google)', icon: <Smartphone size={24} /> },
+                  { id: 'cash', name: 'Pay at Counter', icon: <Banknote size={24} /> }
+                ].map(method => (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedPaymentMethod(method.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem",
+                      borderRadius: "12px", border: selectedPaymentMethod === method.id ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                      backgroundColor: selectedPaymentMethod === method.id ? (darkMode ? "rgba(59, 130, 246, 0.1)" : "white") : theme.card,
+                      color: selectedPaymentMethod === method.id ? "#3b82f6" : theme.text,
+                      cursor: "pointer", transition: "all 0.2s"
+                    }}
+                  >
+                    {method.icon}
+                    <span style={{ fontWeight: "600", fontSize: "1rem" }}>{method.name}</span>
+                    {selectedPaymentMethod === method.id && <Check size={20} style={{ marginLeft: "auto" }} />}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ marginTop: "2rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", color: theme.textMuted }}>
+                  <span>Subtotal</span><span>${getSubtotal().toFixed(2)}</span>
+                </div>
+                {discountPercent > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", color: "#10b981" }}>
+                    <span>Weather Discount</span><span>-${getDiscountAmount().toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", color: theme.textMuted }}>
+                  <span>Tax (8.5%)</span><span>${getTax().toFixed(2)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", paddingTop: "1rem", borderTop: `1px solid ${theme.border}` }}>
+                   <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: theme.text }}>Total</span>
+                   <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#3b82f6" }}>${getTotal().toFixed(2)}</span>
+                </div>
+
+                <button
+                  onClick={submitOrder}
+                  disabled={isProcessing}
+                  style={{
+                    width: "100%", padding: "1.25rem", borderRadius: "12px", border: "none",
+                    background: isProcessing ? "#94a3b8" : "#10b981",
+                    color: "white", fontWeight: "bold", fontSize: "1.125rem",
+                    cursor: isProcessing ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem",
+                    boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.4)"
+                  }}
+                >
+                  {isProcessing ? "Processing..." : `Pay $${getTotal().toFixed(2)}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {customizingItem && (
         <div style={{
@@ -992,18 +1159,41 @@ const CustomerKiosk = () => {
                   <p style={{ color: theme.textMuted, margin: 0 }}>${Number(customizingItem?.price || 0).toFixed(2)}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setCustomizingItem(null)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: theme.textMuted,
-                  cursor: "pointer",
-                  padding: "0.5rem"
-                }}
-              >
-                <X size={24} />
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={speakCustomization}
+                  style={{
+                    background: isSpeaking ? "#3b82f6" : "transparent",
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: "8px",
+                    color: isSpeaking ? "white" : theme.text,
+                    cursor: "pointer",
+                    padding: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s"
+                  }}
+                  title="Read customization aloud"
+                >
+                  <Speaker size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    cancel();
+                    setCustomizingItem(null);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: theme.textMuted,
+                    cursor: "pointer",
+                    padding: "0.5rem"
+                  }}
+                >
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
             <div style={{ padding: "1.5rem", overflowY: "auto", flex: 1 }}>
