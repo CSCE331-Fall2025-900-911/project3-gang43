@@ -279,6 +279,32 @@ export default function createProductsRouter(pool) {
     }
   });
 
+  router.get("/inventory/all", async (req, res) => {
+  console.log("[Server] GET /api/products/inventory/all");
+  try {
+    const result = await pool.query(`
+      SELECT * FROM inventory;`);
+    const inventory = result.rows.map((item) => ({
+      ...item,
+      status: item.quantity <= 0 ? "Out of Stock" : item.quantity <= item.reorder_level ? "Low Stock" : "In Stock",
+      severity: item.quantity <= 0 ? "critical" : item.quantity <= item.reorder_level ? "warning" : "normal",
+    }));
+    
+    res.json({
+      success: true,
+      data: inventory,
+      count: inventory.length
+    });
+  } catch (error) {
+    console.error("[Server] Error fetching inventory:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch inventory",
+      error: error.message
+    });
+  }
+});
+
   // GET inventory alerts
   router.get("/inventory/alerts", async (req, res) => {
     console.log("[Server] GET /api/products/inventory/alerts");
