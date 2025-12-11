@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker } from "lucide-react";
+import { 
+  ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, 
+  Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker, 
+  Banknote, Smartphone, ChevronLeft // Added new icons here
+} from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
 import { useWeatherDiscount } from "../hooks/useWeatherDiscount";
@@ -23,10 +27,15 @@ const CustomerKiosk = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutMessage, setCheckoutMessage] = useState(null);
   const [inventoryWarnings, setInventoryWarnings] = useState([]);
   const [commandFeedback, setCommandFeedback] = useState(null);
   const [lastCommand, setLastCommand] = useState('');
+
+  // --- NEW: Notification & Checkout State ---
+  const [notification, setNotification] = useState(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  // ------------------------------------------
 
   const {
     discountPercent,
@@ -45,6 +54,13 @@ const CustomerKiosk = () => {
   .map(word => word[0])
   .join('')
   .toUpperCase();
+
+  // --- NEW: Helper to trigger notifications ---
+  const triggerNotification = (type, text) => {
+    setNotification({ type, text });
+    setTimeout(() => setNotification(null), 3000); // Hide after 3 seconds
+  };
+  // -------------------------------------------
 
   useEffect(() => {
     const fetchData = async () => {
@@ -157,10 +173,13 @@ const CustomerKiosk = () => {
     }
 
     setCustomizingItem(null);
+    // NEW: Notify user
+    triggerNotification('success', `Added ${item.product_name || item.name} to cart`);
   };
 
   const removeFromCart = (cartId) => {
     setCart(cart.filter((item) => item.cartId !== cartId));
+    triggerNotification('info', 'Item removed');
   };
 
   const updateQuantity = (cartId, delta) => {
@@ -173,7 +192,10 @@ const CustomerKiosk = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    triggerNotification('info', 'Cart cleared');
+  };
 
   const getSubtotal = () => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
   const getDiscountAmount = () => {
@@ -204,14 +226,14 @@ const CustomerKiosk = () => {
 
   const fontMultiplier = getFontSizeMultiplier();
 
-  const handleCheckout = async () => {
+  // --- MODIFIED: Renamed to submitOrder and updated to close modal on success ---
+  const submitOrder = async () => {
     if (cart.length === 0) {
-      setCheckoutMessage({ type: 'error', text: 'Cart is empty' });
+      triggerNotification('error', 'Cart is empty');
       return;
     }
 
     setIsProcessing(true);
-    setCheckoutMessage(null);
     setInventoryWarnings([]);
 
     try {
@@ -235,23 +257,15 @@ const CustomerKiosk = () => {
 
       if (response.success) {
         setInventoryWarnings(response.data.warnings || []);
-        setCheckoutMessage({
-          type: 'success',
-          text: `Order #${response.data.orderId} processed successfully!`,
-        });
+        // Success actions
+        triggerNotification('success', `Order #${response.data.orderId} submitted successfully!`);
         setCart([]);
-        setTimeout(() => setCheckoutMessage(null), 3000);
+        setIsCheckoutOpen(false); // Close the modal
       } else {
-        setCheckoutMessage({
-          type: 'error',
-          text: response.message || 'Failed to process order',
-        });
+        triggerNotification('error', response.message || 'Failed to process order');
       }
     } catch (error) {
-      setCheckoutMessage({
-        type: 'error',
-        text: 'Error processing order. Please try again.',
-      });
+      triggerNotification('error', 'Error processing order. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -264,14 +278,13 @@ const CustomerKiosk = () => {
     // Clear cart command
     if (lowerCommand.includes('clear cart') || lowerCommand.includes('empty cart')) {
       clearCart();
-      setCommandFeedback({ success: true, message: 'Cart cleared' });
       return;
     }
 
     // Checkout command
     if (lowerCommand.includes('checkout') || lowerCommand.includes('place order') || lowerCommand.includes('complete order')) {
-      handleCheckout();
-      setCommandFeedback({ success: true, message: 'Processing checkout...' });
+      if(cart.length > 0) setIsCheckoutOpen(true);
+      else triggerNotification('error', 'Cart is empty');
       return;
     }
 
@@ -302,7 +315,6 @@ const CustomerKiosk = () => {
 
       if (foundProduct) {
         addToCart(foundProduct);
-        setCommandFeedback({ success: true, message: `Added ${foundProduct.product_name} to cart` });
       } else {
         setCommandFeedback({ success: false, message: 'Product not found. Please try again.' });
       }
@@ -319,7 +331,6 @@ const CustomerKiosk = () => {
 
       if (foundCartItem) {
         removeFromCart(foundCartItem.cartId);
-        setCommandFeedback({ success: true, message: `Removed ${foundCartItem.name || foundCartItem.product_name} from cart` });
       } else {
         setCommandFeedback({ success: false, message: 'Item not found in cart' });
       }
@@ -395,6 +406,31 @@ const CustomerKiosk = () => {
 
   return (
     <div style={{ backgroundColor: theme.bg, minHeight: "100vh", position: "relative" }}>
+      
+      {/* --- NEW: Global Notification Toast --- */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          backgroundColor: notification.type === 'success' ? '#10b981' : notification.type === 'error' ? '#ef4444' : '#3b82f6',
+          color: 'white',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          <style>{`@keyframes slideDown { from { transform: translate(-50%, -100%); } to { transform: translate(-50%, 0); } }`}</style>
+          {notification.type === 'success' ? <Check size={24} /> : notification.type === 'error' ? <AlertCircle size={24} /> : <AlertCircle size={24} />}
+          <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{notification.text}</span>
+        </div>
+      )}
+
       <div style={{ backgroundColor: theme.card, borderBottom: `1px solid ${theme.border}` }}>
         <div style={{ padding: "1rem 1.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -915,23 +951,6 @@ const CustomerKiosk = () => {
                   </div>
                 </div>
 
-                {checkoutMessage && (
-                  <div style={{
-                    padding: `${0.75 * fontMultiplier}rem`,
-                    borderRadius: "10px",
-                    marginBottom: "1rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    backgroundColor: checkoutMessage.type === 'success' ? '#dcfce7' : '#fee2e2',
-                    color: checkoutMessage.type === 'success' ? '#166534' : '#991b1b',
-                    border: `1px solid ${checkoutMessage.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-                  }}>
-                    <AlertCircle style={{ width: `${18 * fontMultiplier}px`, height: `${18 * fontMultiplier}px` }} />
-                    <span style={{ fontSize: `${0.875 * fontMultiplier}rem` }}>{checkoutMessage.text}</span>
-                  </div>
-                )}
-
                 {inventoryWarnings.length > 0 && (
                   <div style={{
                     padding: `${0.75 * fontMultiplier}rem`,
@@ -951,8 +970,9 @@ const CustomerKiosk = () => {
                   </div>
                 )}
 
+                {/* MODIFIED: Opens the Checkout Modal instead of direct submit */}
                 <button
-                  onClick={handleCheckout}
+                  onClick={() => setIsCheckoutOpen(true)}
                   disabled={isProcessing}
                   style={{
                     width: "100%",
@@ -1020,6 +1040,109 @@ const CustomerKiosk = () => {
           </div>
         </div>
       </div>
+
+      {/* --- NEW: Checkout/Review Modal --- */}
+      {isCheckoutOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20000
+        }}>
+          <div style={{
+            backgroundColor: theme.card, width: "90%", maxWidth: "900px", height: "80vh",
+            borderRadius: "16px", display: "grid", gridTemplateColumns: "1.5fr 1fr", overflow: "hidden", border: `1px solid ${theme.border}`
+          }}>
+            {/* Left Side: Order Summary */}
+            <div style={{ padding: "2rem", borderRight: `1px solid ${theme.border}`, overflowY: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+                <button onClick={() => setIsCheckoutOpen(false)} style={{ background: "transparent", border: "none", color: theme.textMuted, cursor: "pointer" }}>
+                  <ChevronLeft size={24} />
+                </button>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: theme.text, margin: 0 }}>Review Order</h2>
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {cart.map((item, idx) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "1rem", borderBottom: `1px solid ${theme.border}` }}>
+                     <div>
+                       <div style={{ fontWeight: "600", color: theme.text, fontSize: "1.1rem" }}>{item.quantity}x {item.product_name}</div>
+                       {item.customizations && (
+                         <div style={{ color: theme.textMuted, fontSize: "0.9rem", marginTop: "4px" }}>
+                           {item.customizations.size} • {item.customizations.sugar} Sugar • {item.customizations.ice}
+                           {item.customizations.toppings.length > 0 && <br />}
+                           {item.customizations.toppings.length > 0 && `+ ${item.customizations.toppings.map(t => t.name).join(", ")}`}
+                         </div>
+                       )}
+                     </div>
+                     <div style={{ fontWeight: "bold", color: theme.text }}>${(item.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Side: Payment & Total */}
+            <div style={{ padding: "2rem", backgroundColor: darkMode ? "#0f172a" : "#f8fafc", display: "flex", flexDirection: "column" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "bold", color: theme.text, marginBottom: "1.5rem" }}>Payment Method</h3>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "auto" }}>
+                {[
+                  { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard size={24} /> },
+                  { id: 'wallet', name: 'Digital Wallet (Apple/Google)', icon: <Smartphone size={24} /> },
+                  { id: 'cash', name: 'Pay at Counter', icon: <Banknote size={24} /> }
+                ].map(method => (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedPaymentMethod(method.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem",
+                      borderRadius: "12px", border: selectedPaymentMethod === method.id ? "2px solid #3b82f6" : `1px solid ${theme.border}`,
+                      backgroundColor: selectedPaymentMethod === method.id ? (darkMode ? "rgba(59, 130, 246, 0.1)" : "white") : theme.card,
+                      color: selectedPaymentMethod === method.id ? "#3b82f6" : theme.text,
+                      cursor: "pointer", transition: "all 0.2s"
+                    }}
+                  >
+                    {method.icon}
+                    <span style={{ fontWeight: "600", fontSize: "1rem" }}>{method.name}</span>
+                    {selectedPaymentMethod === method.id && <Check size={20} style={{ marginLeft: "auto" }} />}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ marginTop: "2rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", color: theme.textMuted }}>
+                  <span>Subtotal</span><span>${getSubtotal().toFixed(2)}</span>
+                </div>
+                {discountPercent > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", color: "#10b981" }}>
+                    <span>Weather Discount</span><span>-${getDiscountAmount().toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", color: theme.textMuted }}>
+                  <span>Tax (8.5%)</span><span>${getTax().toFixed(2)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem", paddingTop: "1rem", borderTop: `1px solid ${theme.border}` }}>
+                   <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: theme.text }}>Total</span>
+                   <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#3b82f6" }}>${getTotal().toFixed(2)}</span>
+                </div>
+
+                <button
+                  onClick={submitOrder}
+                  disabled={isProcessing}
+                  style={{
+                    width: "100%", padding: "1.25rem", borderRadius: "12px", border: "none",
+                    background: isProcessing ? "#94a3b8" : "#10b981",
+                    color: "white", fontWeight: "bold", fontSize: "1.125rem",
+                    cursor: isProcessing ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem",
+                    boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.4)"
+                  }}
+                >
+                  {isProcessing ? "Processing..." : `Pay $${getTotal().toFixed(2)}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {customizingItem && (
         <div style={{
