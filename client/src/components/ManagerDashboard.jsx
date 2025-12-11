@@ -29,6 +29,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Menu,
+  Edit2, 
+  Save,  
+  X,     
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
@@ -59,10 +62,20 @@ const ManagerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [weeklyRevenue, setWeeklyRevenue] = useState([]);
   const [topItems, setTopItems] = useState([]);
+  
+  // Employee State
   const [employees, setEmployees] = useState([]);
   const [newEmployee, setNewEmployee] = useState({
     employee_name: "",
     role: "",
+  });
+
+  // --- UPDATED: State for Editing Employees now includes active ---
+  const [editingEmployee, setEditingEmployee] = useState(null); 
+  const [updatedEmployee, setUpdatedEmployee] = useState({
+    employee_name: "",
+    role: "",
+    active: true // Default to true to prevent null errors
   });
 
   const openReorderModal = (item) => {
@@ -173,13 +186,6 @@ const ManagerDashboard = () => {
           axios.get("/api/products/employees"),
         ]);
 
-        console.log("Products data:", productsRes.data);
-        console.log("Orders history:", ordersHistoryRes.data);
-        console.log("Inventory data:", inventoryRes.data);
-        console.log("Dashboard stats:", statsRes.data);
-        console.log("Recent orders:", recentOrdersRes.data);
-        console.log("Employees :", employeesRes.data);
-
         setProducts(productsRes.data.data || []);
         setOrderHistory(ordersHistoryRes.data.data || []);
         setInventoryData(inventoryRes.data.data || []);
@@ -224,7 +230,6 @@ const ManagerDashboard = () => {
         "/api/products/reports/z-report-pdf",
         null,
         {
-          // if you want to pass a request body use { data: {...} }
           responseType: "blob",
         }
       );
@@ -246,20 +251,10 @@ const ManagerDashboard = () => {
     const lowStockItems = inventoryData.filter((item) => {
       const quantity = parseFloat(item.quantity);
       const reorderLevel = parseFloat(item.reorder_level);
-
-      // Check if quantity is a valid number and if it's less than or equal to reorder level
-      // If reorder_level is not present, consider the item as low stock
       const isLowStock =
         !isNaN(quantity) && (isNaN(reorderLevel) || quantity <= reorderLevel);
-
-      console.log(
-        `Item: ${item.item_name}, Quantity: ${quantity}, Reorder Level: ${reorderLevel}, Is Low Stock: ${isLowStock}`
-      );
-
       return isLowStock;
     });
-
-    console.log("Low stock items:", lowStockItems);
     return lowStockItems;
   };
 
@@ -319,6 +314,8 @@ const ManagerDashboard = () => {
     ],
   };
 
+  // --- EMPLOYEE HANDLERS ---
+
   const handleAddEmployee = async () => {
     if (!newEmployee.employee_name.trim() || !newEmployee.role.trim()) {
       alert("Please fill out all fields");
@@ -330,8 +327,6 @@ const ManagerDashboard = () => {
 
       if (res.data.success) {
         setEmployees([...employees, res.data.data]);
-
-        // Reset form
         setNewEmployee({ employee_name: "", role: "" });
       }
     } catch (err) {
@@ -353,6 +348,49 @@ const ManagerDashboard = () => {
     } catch (err) {
       console.error("Error deleting employee:", err);
       alert("Failed to delete employee.");
+    }
+  };
+
+  // --- UPDATED: Edit Employee Handlers (Fixes NULL error) ---
+
+  const handleEditClick = (employee) => {
+    setEditingEmployee(employee.employee_id);
+    // Important: We must preserve the existing 'active' status
+    setUpdatedEmployee({
+      employee_name: employee.employee_name,
+      role: employee.role,
+      active: employee.active !== undefined ? employee.active : true // Fallback to true if missing
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEmployee(null);
+    setUpdatedEmployee({ employee_name: "", role: "", active: true });
+  };
+
+  const handleUpdateEmployee = async (id) => {
+    if (!updatedEmployee.employee_name.trim() || !updatedEmployee.role.trim()) {
+      alert("Please fill out all fields");
+      return;
+    }
+
+    try {
+      // API call to update employee
+      const res = await axios.put(`/api/products/employees/${id}`, updatedEmployee);
+
+      if (res.data.success) {
+        // Update local state
+        setEmployees(
+          employees.map((emp) =>
+            emp.employee_id === id ? { ...emp, ...updatedEmployee } : emp
+          )
+        );
+        setEditingEmployee(null);
+        alert("Employee updated successfully!");
+      }
+    } catch (err) {
+      console.error("Error updating employee:", err);
+      alert("Failed to update employee.");
     }
   };
 
@@ -904,30 +942,7 @@ const ManagerDashboard = () => {
               />
 
               <button
-                onClick={async () => {
-                  if (
-                    !newEmployee.employee_name.trim() ||
-                    !newEmployee.role.trim()
-                  ) {
-                    alert("Please fill in all fields");
-                    return;
-                  }
-
-                  try {
-                    const response = await axios.post(
-                      "/api/products/employees",
-                      newEmployee
-                    );
-
-                    if (response.data.success) {
-                      setEmployees([...employees, response.data.data]);
-                      setNewEmployee({ employee_name: "", role: "" });
-                    }
-                  } catch (err) {
-                    console.error(err);
-                    alert("Error adding employee");
-                  }
-                }}
+                onClick={handleAddEmployee}
                 style={{
                   background: "#6366f1",
                   color: "white",
@@ -976,46 +991,121 @@ const ManagerDashboard = () => {
                       key={emp.employee_id}
                       style={{ borderBottom: "1px solid #e2e8f0" }}
                     >
-                      <td style={{ padding: "0.75rem", color: "black" }}>
-                        {emp.employee_name}
-                      </td>
-                      <td style={{ padding: "0.75rem", color: "black" }}>{emp.role}</td>
-
-                      <td style={{ padding: "0.75rem", textAlign: "right" }}>
-                        <button
-                          onClick={async () => {
-                            if (!window.confirm(`Delete ${emp.employee_name}?`))
-                              return;
-
-                            try {
-                              const res = await axios.delete(
-                                `/api/products/employees/${emp.employee_id}`
-                              );
-
-                              if (res.data.success) {
-                                setEmployees(
-                                  employees.filter(
-                                    (e) => e.employee_id !== emp.employee_id
-                                  )
-                                );
+                      {/* Check if this row is currently being edited */}
+                      {editingEmployee === emp.employee_id ? (
+                        <>
+                          <td style={{ padding: "0.75rem" }}>
+                            <input
+                              type="text"
+                              value={updatedEmployee.employee_name}
+                              onChange={(e) =>
+                                setUpdatedEmployee({
+                                  ...updatedEmployee,
+                                  employee_name: e.target.value,
+                                })
                               }
-                            } catch (err) {
-                              console.error(err);
-                              alert("Failed to delete employee");
-                            }
-                          }}
-                          style={{
-                            background: "#ef4444",
-                            color: "white",
-                            padding: "0.5rem 1rem",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            border: "none",
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </td>
+                              style={{
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                border: "1px solid #6366f1",
+                                width: "100%",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "0.75rem" }}>
+                            <input
+                              type="text"
+                              value={updatedEmployee.role}
+                              onChange={(e) =>
+                                setUpdatedEmployee({
+                                  ...updatedEmployee,
+                                  role: e.target.value,
+                                })
+                              }
+                              style={{
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                border: "1px solid #6366f1",
+                                width: "100%",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "0.75rem", textAlign: "right" }}>
+                            <button
+                              onClick={() => handleUpdateEmployee(emp.employee_id)}
+                              style={{
+                                background: "#16a34a",
+                                color: "white",
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                border: "none",
+                                cursor: "pointer",
+                                marginRight: "0.5rem",
+                              }}
+                              title="Save Changes"
+                            >
+                              <Save size={16} />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              style={{
+                                background: "#94a3b8",
+                                color: "white",
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                              title="Cancel"
+                            >
+                              <X size={16} />
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        // Normal Display Mode
+                        <>
+                          <td style={{ padding: "0.75rem", color: "black" }}>
+                            {emp.employee_name}
+                          </td>
+                          <td style={{ padding: "0.75rem", color: "black" }}>
+                            {emp.role}
+                          </td>
+                          <td
+                            style={{ padding: "0.75rem", textAlign: "right" }}
+                          >
+                            <button
+                              onClick={() => handleEditClick(emp)}
+                              style={{
+                                background: "#3b82f6",
+                                color: "white",
+                                padding: "0.5rem 1rem",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                border: "none",
+                                marginRight: "0.5rem",
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Edit2 size={16} /> Edit
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEmployee(emp.employee_id)}
+                              style={{
+                                background: "#ef4444",
+                                color: "white",
+                                padding: "0.5rem 1rem",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                border: "none",
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
