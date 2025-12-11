@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../contexts/AuthContext';
 import { 
   ShoppingCart, Trash2, CreditCard, Sun, Moon, Search, Plus, Minus, 
   Globe, ZoomIn, Eye, Volume2, AlertCircle, Check, X, Speaker, 
-  Banknote, Smartphone, ChevronLeft // Added new icons here
+  Banknote, Smartphone, ChevronLeft 
 } from "lucide-react";
 import GoogleTranslate from "./GoogleTranslate";
 import { getAllProducts, getCategories, checkoutOrder } from '../services/routes.js';
@@ -1008,33 +1009,6 @@ const CustomerKiosk = () => {
                   <CreditCard style={{ width: `${20 * fontMultiplier}px`, height: `${20 * fontMultiplier}px` }} />
                   {isProcessing ? "Processing..." : "Process Payment"}
                 </button>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.75rem" }}>
-                  <button style={{
-                    padding: `${0.625 * fontMultiplier}rem`,
-                    borderRadius: "8px",
-                    border: `1px solid ${theme.border}`,
-                    backgroundColor: theme.card,
-                    color: theme.text,
-                    fontSize: `${0.875 * fontMultiplier}rem`,
-                    fontWeight: "500",
-                    cursor: "pointer"
-                  }}>
-                    Hold
-                  </button>
-                  <button style={{
-                    padding: `${0.625 * fontMultiplier}rem`,
-                    borderRadius: "8px",
-                    border: "1px solid #fecaca",
-                    backgroundColor: "#fee2e2",
-                    color: "#dc2626",
-                    fontSize: `${0.875 * fontMultiplier}rem`,
-                    fontWeight: "500",
-                    cursor: "pointer"
-                  }}>
-                    Void
-                  </button>
-                </div>
               </>
             )}
           </div>
