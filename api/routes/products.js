@@ -86,6 +86,8 @@ export default function createProductsRouter(pool) {
     try {
       const { employee_name, role } = req.body;
 
+      console.log('[Server] POST /api/products/employees', { employee_name, role });
+
       if (!employee_name || !role) {
         return res.status(400).json({
           success: false,
@@ -102,12 +104,26 @@ export default function createProductsRouter(pool) {
         [employee_name, role]
       );
 
+      console.log('[Server] Employee added successfully:', result.rows[0]);
       res.json({ success: true, data: result.rows[0] });
     } catch (err) {
       console.error("Error adding employee:", err);
+      console.error("Error code:", err.code);
+      console.error("Error detail:", err.detail);
+
+      // Provide more specific error message
+      let errorMessage = "Failed to add employee";
+      if (err.code === '23505') {
+        errorMessage = "An employee with this information already exists";
+      } else if (err.code === '42P01') {
+        errorMessage = "Employees table does not exist. Please run the schema.sql file first.";
+      }
+
       res.status(500).json({
         success: false,
-        message: "Failed to add employee",
+        message: errorMessage,
+        error: err.message,
+        code: err.code
       });
     }
   });
