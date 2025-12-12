@@ -969,7 +969,7 @@ const CashierView = () => {
 
         <div>
           <div style={{ marginBottom: `${1.5 * fontMultiplier}rem` }}>
-            <WeatherWidget />
+            <WeatherWidget showCitySearch={false} />
           </div>
 
           <div style={{ backgroundColor: theme.card, borderRadius: "16px", border: `1px solid ${theme.border}`, padding: `${1.25 * fontMultiplier}rem`, position: "sticky", top: `${1.5 * fontMultiplier}rem` }}>
