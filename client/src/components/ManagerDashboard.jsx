@@ -439,7 +439,9 @@ const ManagerDashboard = () => {
     }
   };
 
-  const sidebarItems = [];
+  const sidebarItems = [{ name: "Analytics", icon: LayoutDashboard },
+    { name: "Inventory", icon: Package },
+    { name: "Staff", icon: Users },];
 
   // Loading state
   if (loading && !stats.length) {
