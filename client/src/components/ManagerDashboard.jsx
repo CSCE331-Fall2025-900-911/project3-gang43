@@ -29,9 +29,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Menu,
-  Edit2, 
-  Save,  
-  X,     
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
@@ -62,7 +62,12 @@ const ManagerDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [weeklyRevenue, setWeeklyRevenue] = useState([]);
   const [topItems, setTopItems] = useState([]);
-  
+  const [usageTimeWindow, setUsageTimeWindow] = useState("7days");
+  const [usageData, setUsageData] = useState([]);
+  const [usageStartDate, setUsageStartDate] = useState("");
+  const [usageEndDate, setUsageEndDate] = useState("");
+  const [usageViewType, setUsageViewType] = useState("bar");
+
   // Employee State
   const [employees, setEmployees] = useState([]);
   const [newEmployee, setNewEmployee] = useState({
@@ -71,11 +76,11 @@ const ManagerDashboard = () => {
   });
 
   // --- UPDATED: State for Editing Employees now includes active ---
-  const [editingEmployee, setEditingEmployee] = useState(null); 
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [updatedEmployee, setUpdatedEmployee] = useState({
     employee_name: "",
     role: "",
-    active: true // Default to true to prevent null errors
+    active: true, // Default to true to prevent null errors
   });
 
   const openReorderModal = (item) => {
@@ -175,6 +180,7 @@ const ManagerDashboard = () => {
           weeklyRevenueRes,
           topItemsRes,
           employeesRes,
+          usageHistoryRes,
         ] = await Promise.all([
           axios.get("/api/products"),
           axios.get("/api/orders/history"),
@@ -184,13 +190,14 @@ const ManagerDashboard = () => {
           axios.get("/api/products/revenue/last7days"),
           axios.get("/api/products/orders/top-items/last7days"),
           axios.get("/api/products/employees"),
+          axios.get("/api/products/usage/history?timeWindow=7days"),
         ]);
 
         setProducts(productsRes.data.data || []);
         setOrderHistory(ordersHistoryRes.data.data || []);
         // Handle both array and object with data property
-        const inventoryItems = Array.isArray(inventoryRes.data) 
-          ? inventoryRes.data 
+        const inventoryItems = Array.isArray(inventoryRes.data)
+          ? inventoryRes.data
           : inventoryRes.data.data || [];
         console.log("Setting inventory data to:", inventoryItems);
         setInventoryData(inventoryItems);
@@ -199,6 +206,7 @@ const ManagerDashboard = () => {
         setWeeklyRevenue(weeklyRevenueRes.data.data || []);
         setTopItems(topItemsRes.data.data || []);
         setEmployees(employeesRes.data.data || []);
+        setUsageData(usageHistoryRes.data.data || []);
 
         setLoading(false);
       } catch (error) {
@@ -210,6 +218,24 @@ const ManagerDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Add this NEW useEffect after the main one
+  useEffect(() => {
+    const fetchUsageData = async () => {
+      try {
+        let url = `/api/products/usage/history?timeWindow=${usageTimeWindow}`;
+        if (usageTimeWindow === "custom" && usageStartDate && usageEndDate) {
+          url += `&startDate=${usageStartDate}&endDate=${usageEndDate}`;
+        }
+
+        const response = await axios.get(url);
+        setUsageData(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching usage data:", error);
+      }
+    };
+
+    fetchUsageData();
+  }, [usageTimeWindow, usageStartDate, usageEndDate]);
   const fetchXReport = async () => {
     try {
       const response = await axios.get("/api/products/reports/x-report-pdf", {
@@ -226,10 +252,17 @@ const ManagerDashboard = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error("Error fetching X-Report PDF:", error);
+      alert(
+        error.response?.data?.error || "Already generated Z-report for day."
+      );
     }
   };
 
   const generateZReport = async () => {
+    if (!window.confirm("This will close the current shift. Are you sure?")) {
+      return;
+    }
+
     try {
       const response = await axios.post(
         "/api/products/reports/z-report-pdf",
@@ -247,11 +280,15 @@ const ManagerDashboard = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      alert("Z-Report generated successfully. Shift has been closed.");
     } catch (error) {
       console.error("Error fetching Z-Report PDF:", error);
+      alert(
+        error.response?.data?.error ||
+          "Failed to generate Z-Report. There may be no unreported orders."
+      );
     }
   };
-
   const getLowStockItems = () => {
     const lowStockItems = inventoryData.filter((item) => {
       const quantity = parseFloat(item.quantity);
@@ -364,7 +401,7 @@ const ManagerDashboard = () => {
     setUpdatedEmployee({
       employee_name: employee.employee_name,
       role: employee.role,
-      active: employee.active !== undefined ? employee.active : true // Fallback to true if missing
+      active: employee.active !== undefined ? employee.active : true, // Fallback to true if missing
     });
   };
 
@@ -381,7 +418,10 @@ const ManagerDashboard = () => {
 
     try {
       // API call to update employee
-      const res = await axios.put(`/api/products/employees/${id}`, updatedEmployee);
+      const res = await axios.put(
+        `/api/products/employees/${id}`,
+        updatedEmployee
+      );
 
       if (res.data.success) {
         // Update local state
@@ -399,11 +439,7 @@ const ManagerDashboard = () => {
     }
   };
 
-  const sidebarItems = [
-    { name: "Analytics", icon: LayoutDashboard },
-    { name: "Inventory", icon: Package },
-    { name: "Staff", icon: Users },
-  ];
+  const sidebarItems = [];
 
   // Loading state
   if (loading && !stats.length) {
@@ -574,7 +610,9 @@ const ManagerDashboard = () => {
                 </p>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+              >
                 <div style={{ position: "relative" }}>
                   <Search
                     size={18}
@@ -1077,7 +1115,9 @@ const ManagerDashboard = () => {
                 </p>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+              >
                 <div style={{ position: "relative" }}>
                   <Search
                     size={18}
@@ -1452,7 +1492,9 @@ const ManagerDashboard = () => {
 
                         <td style={{ padding: "0.75rem", textAlign: "right" }}>
                           <button
-                            onClick={() => handleDeleteEmployee(emp.employee_id)}
+                            onClick={() =>
+                              handleDeleteEmployee(emp.employee_id)
+                            }
                             style={{
                               background: "#ef4444",
                               color: "white",
@@ -1545,6 +1587,365 @@ const ManagerDashboard = () => {
             </div>
           </div>
         )}
+        {/* Product Usage Chart Section */}
+        <div style={{ marginTop: "2rem" }}>
+          <div
+            style={{
+              background: "white",
+              padding: "1.5rem",
+              borderRadius: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: "bold",
+                color: "#0f172a",
+                marginBottom: "1rem",
+              }}
+            >
+              Product Usage Analysis
+            </h3>
+
+            {/* Time Window Selector */}
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                alignItems: "center",
+                flexWrap: "wrap",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <button
+                onClick={() => setUsageTimeWindow("7days")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background:
+                    usageTimeWindow === "7days" ? "#6366f1" : "#f1f5f9",
+                  color: usageTimeWindow === "7days" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setUsageTimeWindow("30days")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background:
+                    usageTimeWindow === "30days" ? "#6366f1" : "#f1f5f9",
+                  color: usageTimeWindow === "30days" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setUsageTimeWindow("custom")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background:
+                    usageTimeWindow === "custom" ? "#6366f1" : "#f1f5f9",
+                  color: usageTimeWindow === "custom" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Custom Range
+              </button>
+
+              {usageTimeWindow === "custom" && (
+                <>
+                  <input
+                    type="date"
+                    value={usageStartDate}
+                    onChange={(e) => setUsageStartDate(e.target.value)}
+                    style={{
+                      padding: "0.75rem",
+                      borderRadius: "10px",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  />
+                  <span style={{ color: "#64748b" }}>to</span>
+                  <input
+                    type="date"
+                    value={usageEndDate}
+                    onChange={(e) => setUsageEndDate(e.target.value)}
+                    style={{
+                      padding: "0.75rem",
+                      borderRadius: "10px",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* View Type Selector */}
+            <div
+              style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
+            >
+              <button
+                onClick={() => setUsageViewType("bar")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: usageViewType === "bar" ? "#6366f1" : "#f1f5f9",
+                  color: usageViewType === "bar" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Bar Chart
+              </button>
+              <button
+                onClick={() => setUsageViewType("line")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: usageViewType === "line" ? "#6366f1" : "#f1f5f9",
+                  color: usageViewType === "line" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Line Chart
+              </button>
+              <button
+                onClick={() => setUsageViewType("table")}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: usageViewType === "table" ? "#6366f1" : "#f1f5f9",
+                  color: usageViewType === "table" ? "white" : "#64748b",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Table View
+              </button>
+            </div>
+
+            {/* Chart Display */}
+            {usageData.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#64748b",
+                  padding: "3rem",
+                }}
+              >
+                No usage data available for the selected time period
+              </div>
+            ) : (
+              <>
+                {usageViewType === "bar" && (
+                  <div style={{ height: "400px" }}>
+                    <Bar
+                      data={{
+                        labels: usageData.map((item) => item.date),
+                        datasets:
+                          usageData[0] &&
+                          Object.keys(usageData[0])
+                            .filter((key) => key !== "date")
+                            .map((productName, idx) => ({
+                              label: productName,
+                              data: usageData.map(
+                                (item) => item[productName] || 0
+                              ),
+                              backgroundColor: [
+                                "#6366f1",
+                                "#8b5cf6",
+                                "#ec4899",
+                                "#f59e0b",
+                                "#10b981",
+                                "#3b82f6",
+                              ][idx % 6],
+                              borderRadius: 6,
+                            })),
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: true, position: "top" },
+                          tooltip: {
+                            backgroundColor: "#1e293b",
+                            padding: 12,
+                            cornerRadius: 8,
+                          },
+                        },
+                        scales: {
+                          x: { grid: { display: false } },
+                          y: { beginAtZero: true, grid: { color: "#f1f5f9" } },
+                        },
+                      }}
+                    />
+                  </div>
+                )}
+
+                {usageViewType === "line" && (
+                  <div style={{ height: "400px" }}>
+                    <Line
+                      data={{
+                        labels: usageData.map((item) => item.date),
+                        datasets:
+                          usageData[0] &&
+                          Object.keys(usageData[0])
+                            .filter((key) => key !== "date")
+                            .map((productName, idx) => ({
+                              label: productName,
+                              data: usageData.map(
+                                (item) => item[productName] || 0
+                              ),
+                              borderColor: [
+                                "#6366f1",
+                                "#8b5cf6",
+                                "#ec4899",
+                                "#f59e0b",
+                                "#10b981",
+                                "#3b82f6",
+                              ][idx % 6],
+                              backgroundColor: "rgba(99, 102, 241, 0.1)",
+                              tension: 0.4,
+                              fill: false,
+                              pointBackgroundColor: "#ffffff",
+                              pointBorderWidth: 2,
+                              pointRadius: 4,
+                            })),
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: true, position: "top" },
+                          tooltip: {
+                            backgroundColor: "#1e293b",
+                            padding: 12,
+                            cornerRadius: 8,
+                          },
+                        },
+                        scales: {
+                          x: { grid: { display: false } },
+                          y: { beginAtZero: true, grid: { color: "#f1f5f9" } },
+                        },
+                      }}
+                    />
+                  </div>
+                )}
+
+                {usageViewType === "table" && (
+                  <div style={{ overflowX: "auto" }}>
+                    <table
+                      style={{ width: "100%", borderCollapse: "collapse" }}
+                    >
+                      <thead style={{ background: "#f1f5f9" }}>
+                        <tr>
+                          <th
+                            style={{
+                              padding: "0.75rem",
+                              textAlign: "left",
+                              borderBottom: "2px solid #e2e8f0",
+                            }}
+                          >
+                            Date
+                          </th>
+                          {usageData[0] &&
+                            Object.keys(usageData[0])
+                              .filter((key) => key !== "date")
+                              .map((productName) => (
+                                <th
+                                  key={productName}
+                                  style={{
+                                    padding: "0.75rem",
+                                    textAlign: "center",
+                                    borderBottom: "2px solid #e2e8f0",
+                                  }}
+                                >
+                                  {productName}
+                                </th>
+                              ))}
+                          <th
+                            style={{
+                              padding: "0.75rem",
+                              textAlign: "center",
+                              borderBottom: "2px solid #e2e8f0",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usageData.map((row, idx) => {
+                          const rowTotal = Object.keys(row)
+                            .filter((key) => key !== "date")
+                            .reduce((sum, key) => sum + (row[key] || 0), 0);
+
+                          return (
+                            <tr
+                              key={idx}
+                              style={{ borderBottom: "1px solid #e2e8f0" }}
+                            >
+                              <td
+                                style={{
+                                  padding: "0.75rem",
+                                  fontWeight: "600",
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {row.date}
+                              </td>
+                              {Object.keys(row)
+                                .filter((key) => key !== "date")
+                                .map((productName) => (
+                                  <td
+                                    key={productName}
+                                    style={{
+                                      padding: "0.75rem",
+                                      textAlign: "center",
+                                      color: "#64748b",
+                                    }}
+                                  >
+                                    {row[productName] || 0}
+                                  </td>
+                                ))}
+                              <td
+                                style={{
+                                  padding: "0.75rem",
+                                  textAlign: "center",
+                                  fontWeight: "bold",
+                                  color: "#0f172a",
+                                }}
+                              >
+                                {rowTotal}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

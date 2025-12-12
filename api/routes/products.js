@@ -193,7 +193,8 @@ export default function createProductsRouter(pool) {
     try {
       const { productId } = req.params;
 
-      const result = await pool.query(`
+      const result = await pool.query(
+        `
         SELECT
           pi.product_ingredient_id,
           pi.inventory_id,
@@ -204,7 +205,9 @@ export default function createProductsRouter(pool) {
         JOIN inventory i ON pi.inventory_id = i.inventory_id
         WHERE pi.product_id = $1
         ORDER BY i.item_name
-      `, [productId]);
+      `,
+        [productId]
+      );
 
       res.json({
         success: true,
@@ -226,9 +229,18 @@ export default function createProductsRouter(pool) {
     const client = await pool.connect();
 
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
-      const { product_name, category, size, price, icon, color, description, ingredients } = req.body;
+      const {
+        product_name,
+        category,
+        size,
+        price,
+        icon,
+        color,
+        description,
+        ingredients,
+      } = req.body;
 
       if (!product_name || !category || !price) {
         return res.status(400).json({
@@ -243,7 +255,15 @@ export default function createProductsRouter(pool) {
         VALUES ($1, $2, $3, $4, true, $5, $6, $7)
         RETURNING product_id, product_name, category, size, price, is_available, icon, color, description
         `,
-        [product_name, category, size || 'Medium', price, icon || '🥤', color || '#3b82f6', description || '']
+        [
+          product_name,
+          category,
+          size || "Medium",
+          price,
+          icon || "🥤",
+          color || "#3b82f6",
+          description || "",
+        ]
       );
 
       const productId = result.rows[0].product_id;
@@ -265,15 +285,18 @@ export default function createProductsRouter(pool) {
         }
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
 
-      console.log("[Server] Product created with ID:", result.rows[0].product_id);
+      console.log(
+        "[Server] Product created with ID:",
+        result.rows[0].product_id
+      );
       res.json({
         success: true,
         data: result.rows[0],
       });
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       console.error("[Server] Error creating product:", error);
       res.status(500).json({
         success: false,
@@ -291,10 +314,19 @@ export default function createProductsRouter(pool) {
     const client = await pool.connect();
 
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       const { productId } = req.params;
-      const { product_name, category, size, price, icon, color, description, ingredients } = req.body;
+      const {
+        product_name,
+        category,
+        size,
+        price,
+        icon,
+        color,
+        description,
+        ingredients,
+      } = req.body;
 
       if (!product_name || !category || !price) {
         return res.status(400).json({
@@ -310,11 +342,20 @@ export default function createProductsRouter(pool) {
         WHERE product_id = $8
         RETURNING product_id, product_name, category, size, price, is_available, icon, color, description
         `,
-        [product_name, category, size || 'Medium', price, icon || '🥤', color || '#3b82f6', description || '', productId]
+        [
+          product_name,
+          category,
+          size || "Medium",
+          price,
+          icon || "🥤",
+          color || "#3b82f6",
+          description || "",
+          productId,
+        ]
       );
 
       if (result.rows.length === 0) {
-        await client.query('ROLLBACK');
+        await client.query("ROLLBACK");
         return res.status(404).json({
           success: false,
           message: "Product not found",
@@ -324,7 +365,10 @@ export default function createProductsRouter(pool) {
       // Update ingredients if provided
       if (ingredients && Array.isArray(ingredients)) {
         // Delete existing ingredients
-        await client.query('DELETE FROM product_ingredients WHERE product_id = $1', [productId]);
+        await client.query(
+          "DELETE FROM product_ingredients WHERE product_id = $1",
+          [productId]
+        );
 
         // Add new ingredients
         for (const ingredient of ingredients) {
@@ -340,15 +384,18 @@ export default function createProductsRouter(pool) {
         }
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
 
-      console.log("[Server] Product updated with ID:", result.rows[0].product_id);
+      console.log(
+        "[Server] Product updated with ID:",
+        result.rows[0].product_id
+      );
       res.json({
         success: true,
         data: result.rows[0],
       });
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       console.error("[Server] Error updating product:", error);
       res.status(500).json({
         success: false,
@@ -440,30 +487,40 @@ export default function createProductsRouter(pool) {
   });
 
   router.get("/inventory/all", async (req, res) => {
-  console.log("[Server] GET /api/products/inventory/all");
-  try {
-    const result = await pool.query(`
+    console.log("[Server] GET /api/products/inventory/all");
+    try {
+      const result = await pool.query(`
       SELECT * FROM inventory;`);
-    const inventory = result.rows.map((item) => ({
-      ...item,
-      status: item.quantity <= 0 ? "Out of Stock" : item.quantity <= item.reorder_level ? "Low Stock" : "In Stock",
-      severity: item.quantity <= 0 ? "critical" : item.quantity <= item.reorder_level ? "warning" : "normal",
-    }));
-    
-    res.json({
-      success: true,
-      data: inventory,
-      count: inventory.length
-    });
-  } catch (error) {
-    console.error("[Server] Error fetching inventory:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch inventory",
-      error: error.message
-    });
-  }
-});
+      const inventory = result.rows.map((item) => ({
+        ...item,
+        status:
+          item.quantity <= 0
+            ? "Out of Stock"
+            : item.quantity <= item.reorder_level
+            ? "Low Stock"
+            : "In Stock",
+        severity:
+          item.quantity <= 0
+            ? "critical"
+            : item.quantity <= item.reorder_level
+            ? "warning"
+            : "normal",
+      }));
+
+      res.json({
+        success: true,
+        data: inventory,
+        count: inventory.length,
+      });
+    } catch (error) {
+      console.error("[Server] Error fetching inventory:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch inventory",
+        error: error.message,
+      });
+    }
+  });
 
   // GET inventory alerts
   router.get("/inventory/alerts", async (req, res) => {
@@ -731,29 +788,43 @@ LIMIT 3;
   });
 
   // --- REPORT QUERIES ---
-
-  // 1. Get Totals (Summary)
+  // X-Report Summary - Today from midnight to NOW
+  // X-Report Summary - From start of day to current hour
+  // X-Report Summary - From start of day to current time
+  // X-Report Summary - ONLY from midnight to current time
   const totalsQuery = `
-    SELECT
-        COUNT(order_id) AS total_orders,
-        COALESCE(SUM(total_amount), 0) AS total_sales
-    FROM orders
-    WHERE status = 'completed';
+  SELECT
+      COUNT(order_id) AS total_orders,
+      COALESCE(SUM(total_amount), 0) AS total_sales
+  FROM orders
+  WHERE status = 'completed'
+    AND reported = FALSE
+    AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') >= 
+        date_trunc('day', NOW() AT TIME ZONE 'America/Chicago')
+    AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') <= 
+        (NOW() AT TIME ZONE 'America/Chicago');
 `;
 
-  // 2. Get Hourly Breakdown (The Graph)
+  // Hourly totals - ONLY hours from midnight to current time
   const hourlyQuery = `
-    SELECT
-        date_trunc('hour', order_date) AS hour_start,
-        COUNT(order_id) AS order_count,
-        COALESCE(SUM(total_amount), 0) AS total_sales
-    FROM orders
-    WHERE status = 'completed'
-    GROUP BY date_trunc('hour', order_date)
-    ORDER BY hour_start;
+  SELECT 
+      date_trunc('hour', order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') AS hour_start,
+      COUNT(order_id) AS order_count,
+      COALESCE(SUM(total_amount), 0) AS total_sales
+  FROM orders
+  WHERE status = 'completed'
+    AND reported = FALSE
+    AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') >= 
+        date_trunc('day', NOW() AT TIME ZONE 'America/Chicago')
+    AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') <= 
+        (NOW() AT TIME ZONE 'America/Chicago')
+  GROUP BY 1
+  ORDER BY 1;
 `;
+
   // --- ROUTES ---
 
+  // X-REPORT: View current open sales (No changes to DB)
   // X-REPORT: View current open sales (No changes to DB)
   router.get("/reports/x-report-pdf", async (req, res) => {
     try {
@@ -762,6 +833,14 @@ LIMIT 3;
 
       const summary = totalResult.rows[0];
       const hourlySales = hourlyResult.rows;
+
+      // Check if there are any unreported orders
+      if (!summary || summary.total_orders === "0") {
+        return res.status(400).json({
+          error:
+            "No unreported orders found. Z-Report may have already been generated for today.",
+        });
+      }
 
       const doc = new PDFDocument({ margin: 50 });
       let buffers = [];
@@ -776,11 +855,18 @@ LIMIT 3;
       });
 
       // Title
-      doc.fontSize(20).text("X-Report", { align: "center" });
+      doc.fontSize(20).text("X-Report (Current Session)", { align: "center" });
+      doc.fontSize(10).text(
+        `Generated: ${new Date().toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })}`,
+        { align: "center" }
+      );
       doc.moveDown(2);
 
       // Summary table
-      doc.fontSize(14).text("Summary", { underline: true });
+      doc.fontSize(14).text("Summary (Unreported Orders)", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
       doc.text(`Total Orders: ${summary.total_orders}`);
@@ -788,7 +874,7 @@ LIMIT 3;
       doc.moveDown(1);
 
       // Hourly Sales Table
-      doc.fontSize(14).text("Hourly Sales", { underline: true });
+      doc.fontSize(14).text("Hourly Sales Breakdown", { underline: true });
       doc.moveDown(0.5);
 
       // Table headers
@@ -796,7 +882,7 @@ LIMIT 3;
       doc.text("Order Count", 200, doc.y, { width: 100 });
       doc.text("Total Sales", 310, doc.y, { width: 100 });
       doc.moveDown(0.2);
-      doc.font("Helvetica"); // Reset font for values
+      doc.font("Helvetica");
 
       // Rows
       hourlySales.forEach((row) => {
@@ -820,39 +906,58 @@ LIMIT 3;
   });
 
   // Z-REPORT: View sales AND close the shift (Transaction)
+  // Z-REPORT: View sales AND close the shift (Transaction)
   router.post("/reports/z-report-pdf", async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // Get all "new" completed orders to report
+      // Get all "unreported" completed orders from today
       const summaryResult = await client.query(`
       SELECT COUNT(order_id) AS total_orders,
              COALESCE(SUM(total_amount), 0) AS total_sales
       FROM orders
-      WHERE status = 'completed' AND reported = FALSE;
+      WHERE status = 'completed'
+        AND reported = FALSE
+        AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago')::date = CURRENT_DATE;
     `);
+
       const hourlyResult = await client.query(`
-      SELECT date_trunc('hour', order_date) AS hour_start,
+      SELECT date_trunc('hour', order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago') AS hour_start,
              COUNT(order_id) AS order_count,
              COALESCE(SUM(total_amount), 0) AS total_sales
       FROM orders
-      WHERE status = 'completed' AND reported = FALSE
-      GROUP BY date_trunc('hour', order_date)
+      WHERE status = 'completed'
+        AND reported = FALSE
+        AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago')::date = CURRENT_DATE
+      GROUP BY date_trunc('hour', order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago')
       ORDER BY hour_start;
     `);
 
-      // "Close the shift": mark those orders as reported
-      await client.query(`
-      UPDATE orders SET reported = TRUE 
-      WHERE status = 'completed' AND reported = FALSE;
-    `);
-      await client.query("COMMIT");
-
-      // Make PDF
       const summary = summaryResult.rows[0];
       const hourlySales = hourlyResult.rows;
 
+      // Check if there are any orders to close
+      if (!summary || summary.total_orders === "0") {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error:
+            "No unreported orders to close. Z-Report may have already been generated for today.",
+        });
+      }
+
+      // "Close the shift": mark those orders as reported
+      await client.query(`
+      UPDATE orders
+      SET reported = TRUE
+      WHERE status = 'completed'
+        AND reported = FALSE
+        AND (order_date AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chicago')::date = CURRENT_DATE;
+    `);
+
+      await client.query("COMMIT");
+
+      // Make PDF
       const doc = new PDFDocument({ margin: 50 });
       let buffers = [];
       doc.on("data", buffers.push.bind(buffers));
@@ -867,55 +972,47 @@ LIMIT 3;
 
       // Title
       doc.fontSize(20).text("Z-Report (Shift Closed)", { align: "center" });
+      doc.fontSize(10).text(
+        `Generated: ${new Date().toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })}`,
+        { align: "center" }
+      );
       doc.moveDown(2);
 
-      // If empty, show a friendly message
-      if (!summary || summary.total_orders === "0") {
-        doc
-          .fontSize(14)
-          .text("There are no completed sales to close for this shift.", {
-            align: "center",
-          });
-        doc
-          .fontSize(12)
-          .text("All completed orders have been reported!", {
-            align: "center",
-          });
-      } else {
-        // Summary section
-        doc.fontSize(14).text("Summary", { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(12);
-        doc.text(`Orders Closed: ${summary.total_orders}`);
-        doc.text(
-          `Shift Sales Total: $${Number(summary.total_sales).toFixed(2)}`
-        );
-        doc.moveDown(1);
+      // Summary section
+      doc.fontSize(14).text("Summary", { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Orders Closed: ${summary.total_orders}`);
+      doc.text(`Shift Sales Total: $${Number(summary.total_sales).toFixed(2)}`);
+      doc.moveDown(1);
 
-        // Hourly Sales Table
-        doc.fontSize(14).text("Hourly Sales This Shift", { underline: true });
-        doc.moveDown(0.5);
+      // Hourly Sales Table
+      doc.fontSize(14).text("Hourly Sales This Shift", { underline: true });
+      doc.moveDown(0.5);
 
-        // Table headers
-        doc.font("Helvetica-Bold").text("Hour", 50, doc.y, { width: 150 });
-        doc.text("Order Count", 200, doc.y, { width: 100 });
-        doc.text("Total Sales", 310, doc.y, { width: 100 });
-        doc.moveDown(0.2);
-        doc.font("Helvetica"); // Reset font for values
+      // Table headers
+      doc.font("Helvetica-Bold").text("Hour", 50, doc.y, { width: 150 });
+      doc.text("Order Count", 200, doc.y, { width: 100 });
+      doc.text("Total Sales", 310, doc.y, { width: 100 });
+      doc.moveDown(0.2);
+      doc.font("Helvetica");
 
-        hourlySales.forEach((row) => {
-          const hour = new Date(row.hour_start).toLocaleString("en-US", {
-            dateStyle: "medium",
-            timeStyle: "short",
-          });
-          doc.text(hour, 50, doc.y, { width: 150 });
-          doc.text(row.order_count, 200, doc.y, { width: 100 });
-          doc.text(`$${Number(row.total_sales).toFixed(2)}`, 310, doc.y, {
-            width: 100,
-          });
-          doc.moveDown(0.2);
+      hourlySales.forEach((row) => {
+        const hour = new Date(row.hour_start).toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
         });
-      }
+        doc.text(hour, 50, doc.y, { width: 150 });
+        doc.text(row.order_count, 200, doc.y, { width: 100 });
+        doc.text(`$${Number(row.total_sales).toFixed(2)}`, 310, doc.y, {
+          width: 100,
+        });
+        doc.moveDown(0.2);
+      });
+
       doc.end();
     } catch (err) {
       await client.query("ROLLBACK");
@@ -923,6 +1020,63 @@ LIMIT 3;
       res.status(500).json({ error: "Failed to generate Z-Report PDF" });
     } finally {
       client.release();
+    }
+  });
+
+  // GET /api/products/usage/history
+  router.get("/usage/history", async (req, res) => {
+    try {
+      const { timeWindow, startDate, endDate } = req.query;
+
+      let dateFilter = "";
+      if (timeWindow === "7days") {
+        dateFilter = "AND o.order_date >= NOW() - INTERVAL '7 days'";
+      } else if (timeWindow === "30days") {
+        dateFilter = "AND o.order_date >= NOW() - INTERVAL '30 days'";
+      } else if (timeWindow === "custom" && startDate && endDate) {
+        dateFilter = `AND o.order_date BETWEEN '${startDate}' AND '${endDate}'`;
+      }
+
+      const query = `
+      SELECT 
+        DATE(o.order_date) as date,
+        p.product_name,
+        SUM(oi.quantity) as total_used
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+      JOIN products p ON oi.product_id = p.product_id
+      WHERE o.status = 'completed' ${dateFilter}
+      GROUP BY DATE(o.order_date), p.product_name
+      ORDER BY date ASC
+    `;
+
+      const result = await pool.query(query);
+
+      // Transform data for frontend
+      const usageByDate = {};
+      result.rows.forEach((row) => {
+        // Handle date formatting properly
+        const dateStr =
+          row.date instanceof Date
+            ? row.date.toISOString().split("T")[0]
+            : row.date;
+
+        if (!usageByDate[dateStr]) {
+          usageByDate[dateStr] = { date: dateStr };
+        }
+        usageByDate[dateStr][row.product_name] = parseFloat(row.total_used);
+      });
+
+      const usageData = Object.values(usageByDate);
+
+      res.json({ success: true, data: usageData });
+    } catch (error) {
+      console.error("Error fetching usage history:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch usage data",
+        error: error.message,
+      });
     }
   });
 
