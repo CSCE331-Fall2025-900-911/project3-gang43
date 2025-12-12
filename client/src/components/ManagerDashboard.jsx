@@ -399,11 +399,10 @@ const ManagerDashboard = () => {
     }
   };
 
-  // Removed "Staff" from the sidebar items
   const sidebarItems = [
     { name: "Analytics", icon: LayoutDashboard },
     { name: "Inventory", icon: Package },
-    { name: "Employees", icon: Users },
+    { name: "Staff", icon: Users },
   ];
 
   // Loading state
