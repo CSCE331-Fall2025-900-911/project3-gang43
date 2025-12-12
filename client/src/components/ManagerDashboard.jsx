@@ -403,6 +403,7 @@ const ManagerDashboard = () => {
   const sidebarItems = [
     { name: "Analytics", icon: LayoutDashboard },
     { name: "Inventory", icon: Package },
+    { name: "Employees", icon: Users },
   ];
 
   // Loading state
