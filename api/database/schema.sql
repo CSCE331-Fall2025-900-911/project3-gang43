@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS orders (
   tax DECIMAL(10, 2),
   cashier_name VARCHAR(255),
   status VARCHAR(50) DEFAULT 'completed',
+  reported BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -58,12 +59,23 @@ CREATE TABLE IF NOT EXISTS order_items (
   FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT
 );
 
--- Create indexes for better performance
-CREATE INDEX idx_products_category ON products(category);
-CREATE INDEX idx_products_available ON products(is_available);
-CREATE INDEX idx_product_ingredients_product_id ON product_ingredients(product_id);
-CREATE INDEX idx_product_ingredients_inventory_id ON product_ingredients(inventory_id);
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_order_items_product_id ON order_items(product_id);
-CREATE INDEX idx_orders_date ON orders(order_date);
-CREATE INDEX idx_orders_cashier ON orders(cashier_name);
+-- Employees Table
+CREATE TABLE IF NOT EXISTS employees (
+  employee_id SERIAL PRIMARY KEY,
+  employee_name VARCHAR(255) NOT NULL,
+  role VARCHAR(100) NOT NULL,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance (skip if they already exist)
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_available ON products(is_available);
+CREATE INDEX IF NOT EXISTS idx_product_ingredients_product_id ON product_ingredients(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_ingredients_inventory_id ON product_ingredients(inventory_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date);
+CREATE INDEX IF NOT EXISTS idx_orders_cashier ON orders(cashier_name);
+CREATE INDEX IF NOT EXISTS idx_employees_active ON employees(active);

@@ -1485,30 +1485,143 @@ const ManagerDashboard = () => {
                         key={emp.employee_id}
                         style={{ borderBottom: "1px solid #e2e8f0" }}
                       >
-                        <td style={{ padding: "0.75rem", color: "black" }}>
-                          {emp.employee_name}
-                        </td>
-                        <td style={{ padding: "0.75rem", color: "black" }}>
-                          {emp.role}
-                        </td>
-
-                        <td style={{ padding: "0.75rem", textAlign: "right" }}>
-                          <button
-                            onClick={() =>
-                              handleDeleteEmployee(emp.employee_id)
-                            }
-                            style={{
-                              background: "#ef4444",
-                              color: "white",
-                              padding: "0.5rem 1rem",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              border: "none",
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </td>
+                        {editingEmployee === emp.employee_id ? (
+                          <>
+                            <td style={{ padding: "0.75rem" }}>
+                              <input
+                                type="text"
+                                value={updatedEmployee.employee_name}
+                                onChange={(e) =>
+                                  setUpdatedEmployee({
+                                    ...updatedEmployee,
+                                    employee_name: e.target.value,
+                                  })
+                                }
+                                style={{
+                                  padding: "0.5rem",
+                                  borderRadius: "6px",
+                                  border: "1px solid #e2e8f0",
+                                  width: "100%",
+                                }}
+                              />
+                            </td>
+                            <td style={{ padding: "0.75rem" }}>
+                              <input
+                                type="text"
+                                value={updatedEmployee.role}
+                                onChange={(e) =>
+                                  setUpdatedEmployee({
+                                    ...updatedEmployee,
+                                    role: e.target.value,
+                                  })
+                                }
+                                style={{
+                                  padding: "0.5rem",
+                                  borderRadius: "6px",
+                                  border: "1px solid #e2e8f0",
+                                  width: "100%",
+                                }}
+                              />
+                            </td>
+                            <td
+                              style={{
+                                padding: "0.75rem",
+                                textAlign: "right",
+                                display: "flex",
+                                gap: "0.5rem",
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <button
+                                onClick={() =>
+                                  handleUpdateEmployee(emp.employee_id)
+                                }
+                                style={{
+                                  background: "#10b981",
+                                  color: "white",
+                                  padding: "0.5rem 1rem",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  border: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.25rem",
+                                }}
+                              >
+                                <Save size={16} />
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                style={{
+                                  background: "#64748b",
+                                  color: "white",
+                                  padding: "0.5rem 1rem",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  border: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.25rem",
+                                }}
+                              >
+                                <X size={16} />
+                                Cancel
+                              </button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td style={{ padding: "0.75rem", color: "black" }}>
+                              {emp.employee_name}
+                            </td>
+                            <td style={{ padding: "0.75rem", color: "black" }}>
+                              {emp.role}
+                            </td>
+                            <td
+                              style={{
+                                padding: "0.75rem",
+                                textAlign: "right",
+                                display: "flex",
+                                gap: "0.5rem",
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <button
+                                onClick={() => handleEditClick(emp)}
+                                style={{
+                                  background: "#6366f1",
+                                  color: "white",
+                                  padding: "0.5rem 1rem",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  border: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.25rem",
+                                }}
+                              >
+                                <Edit2 size={16} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeleteEmployee(emp.employee_id)
+                                }
+                                style={{
+                                  background: "#ef4444",
+                                  color: "white",
+                                  padding: "0.5rem 1rem",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  border: "none",
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>

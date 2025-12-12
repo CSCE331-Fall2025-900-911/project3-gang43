@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const WeatherWidget = ({ city = 'College Station' }) => {
+const WeatherWidget = ({ city = 'College Station', showCitySearch = true }) => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -138,16 +138,18 @@ const WeatherWidget = ({ city = 'College Station' }) => {
         </div>
       )}
 
-      <form onSubmit={handleCitySubmit} className="city-search">
-        <input
-          type="text"
-          value={customCity}
-          onChange={(e) => setCustomCity(e.target.value)}
-          placeholder="Enter city name"
-          className="city-input"
-        />
-        <button type="submit" className="search-btn">Search</button>
-      </form>
+      {showCitySearch && (
+        <form onSubmit={handleCitySubmit} className="city-search">
+          <input
+            type="text"
+            value={customCity}
+            onChange={(e) => setCustomCity(e.target.value)}
+            placeholder="Enter city name"
+            className="city-input"
+          />
+          <button type="submit" className="search-btn">Search</button>
+        </form>
+      )}
 
       <style>{`
         .weather-widget {
